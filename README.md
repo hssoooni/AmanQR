@@ -4,34 +4,29 @@ AmanQR analyzes QR codes and detects malicious URLs (phishing, malware, scam).
 
 ## Features
 
-- QR Code Decoding (OpenCV)
-- URL Analysis (rule-based)
+- QR Code Decoding using OpenCV
+- URL Analysis with rule-based detection
 - WHOIS Domain Check
-- Clear verdict: Benign / Suspicious / Malicious
+- Clear verdict: Benign, Suspicious, or Malicious
 
 ## Accuracy
 
-91.7 percent on held-out test set (200k QR codes).
+91.7 percent on a held-out test set of 200,000 QR codes.
 
 ## Tech Stack
 
-Python 3, OpenCV, python-whois, Streamlit
-
-## Installation
-
-Step 1: Clone the repository
-Step 2: Install requirements
-Step 3: Run streamlit app
-
-See full instructions below.
+- Python 3
+- OpenCV for QR decoding
+- python-whois for domain analysis
+- Streamlit for web interface
 
 ## Privacy
 
-Your images are NOT stored. Analysis is real-time.
+Your images are NOT stored. Analysis happens in real-time.
 
 ## Disclaimer
 
-Advisory tool. Always verify sensitive QR codes manually.
+This tool is advisory. Always verify sensitive QR codes manually.
 
 ## License
 
