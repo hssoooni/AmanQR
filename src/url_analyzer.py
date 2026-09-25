@@ -57,13 +57,24 @@ TRUSTED_DOMAINS = {
 
 
 def clean_url(text):
+    """Remove pandas artifacts from URL string"""
     if not isinstance(text, str):
         return None
     text = text.strip()
+    
+    # Remove pandas "Name: url, dtype: object" suffix
+    text = re.split(r"\s*Name:", text)[0]
+    
+    # Remove leading numbers (pandas index)
+    text = re.sub(r"^\d+\s+", "", text)
+    
+    # Find http/https and cut everything before it
     if "http" in text.lower():
         text = text[text.lower().index("http"):]
-    text = re.split(r"\s+Name:", text)[0]
-    text = re.sub(r"^\d+\s+", "", text)
+    
+    # Remove any trailing "dtype:" artifacts
+    text = re.split(r"\s+dtype:", text)[0]
+    
     return text.strip()
 
 
