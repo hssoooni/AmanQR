@@ -38,6 +38,24 @@ ACTION_KEYWORDS = [
     "colis", "package", "suivi", "bookmark", "redirect", "goto",
 ]
 
+# NEW: Suspicious file patterns (hacked sites)
+SUSPICIOUS_FILE_PATTERNS = [
+    "admin.php", "wp-admin", "wp-login", "phpmyadmin",
+    "shell.php", "c99.php", "r57.php", "backdoor",
+    ".env", ".git", "config.php", "wp-config",
+    "upload.php", "filemanager", "webshell",
+    "xmlrpc.php", "setup.php", "install.php",
+]
+
+# NEW: Suspicious path keywords
+SUSPICIOUS_PATH_KEYWORDS = [
+    "admin", "administrator", "phpmyadmin", "cpanel",
+    "webmail", "roundcube", "phpmailer",
+    "backup", "old", "test", "tmp", "temp",
+]
+
+
+
 SUSPICIOUS_TLDS = {
     ".tk", ".ml", ".ga", ".cf", ".gq", ".xyz", ".top", ".work", ".click",
     ".country", ".stream", ".download", ".review", ".loan", ".date",
@@ -231,6 +249,20 @@ def analyze_url(url):
     if domain_base in ['test', 'demo', 'dev', 'tmp', 'temp']:
         score += 15
         reasons.append(f"Suspicious subdomain: {domain_base}")
+    
+    # 17. NEW: Suspicious file pattern (hacked sites)
+    for pattern in SUSPICIOUS_FILE_PATTERNS:
+        if pattern in url_lower:
+            score += 30
+            reasons.append(f"Suspicious file: {pattern}")
+            break
+    
+    # 18. NEW: Suspicious path keyword (admin panels)
+    for kw in SUSPICIOUS_PATH_KEYWORDS:
+        if f"/{kw}" in path or path.endswith(kw) or kw in path.split('/'):
+            score += 20
+            reasons.append(f"Suspicious path: {kw}")
+            break
     
     score = max(0, min(100, score))
     if not reasons:
