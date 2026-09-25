@@ -1,6 +1,6 @@
 
 """
-AmanQR - URL Analyzer Module
+AmanQR - URL Analyzer Module (v4)
 Rule-based detection of malicious URLs in QR codes.
 """
 import re
@@ -18,13 +18,24 @@ BRANDS = [
     "gov", "moi", "mofa", "moh", "absher", "tawakkalna", "najiz",
 ]
 
+EMAIL_BRANDS = [
+    "hotmail", "outlook", "gmail", "yahoo", "icloud", "live",
+    "msn", "aol", "protonmail", "zoho",
+]
+
+BANKING_BRANDS = [
+    "paypal", "visa", "mastercard", "amex", "bank",
+    "wellsfargo", "chase", "citibank", "hsbc",
+    "alrajhi", "alahli", "sabb", "riyad", "snb",
+]
+
 ACTION_KEYWORDS = [
     "login", "signin", "verify", "verification", "account", "update",
     "secure", "security", "confirm", "password", "banking", "wallet",
     "authenticate", "recovery", "unlock", "suspended", "validation",
     "service", "enligne", "online", "inlogg", "accedi", "acceder",
     "atualizacao", "actualizar", "track", "tracking", "delivery",
-    "colis", "package", "suivi",
+    "colis", "package", "suivi", "bookmark", "redirect", "goto",
 ]
 
 SUSPICIOUS_TLDS = {
@@ -61,20 +72,13 @@ def clean_url(text):
     if not isinstance(text, str):
         return None
     text = text.strip()
-    
-    # Remove pandas "Name: url, dtype: object" suffix
-    text = re.split(r"\s*Name:", text)[0]
-    
-    # Remove leading numbers (pandas index)
-    text = re.sub(r"^\d+\s+", "", text)
-    
-    # Find http/https and cut everything before it
-    if "http" in text.lower():
-        text = text[text.lower().index("http"):]
-    
-    # Remove any trailing "dtype:" artifacts
-    text = re.split(r"\s+dtype:", text)[0]
-    
+    text = re.split(r'\s*Name:', text)[0]
+    text = re.split(r'\s+dtype:', text)[0]
+    text = re.sub(r'^\d+\s+', '', text)
+    text = text.replace('\n', ' ').strip()
+    if 'http' in text.lower():
+        text = text[text.lower().index('http'):]
+    text = re.split(r'\s+Name:', text)[0]
     return text.strip()
 
 
@@ -83,14 +87,34 @@ def levenshtein_ratio(a, b):
 
 
 def looks_like_brand(domain):
-    domain_clean = domain.replace("-", "").replace("_", "")
-    domain_base = domain_clean.split(".")[0]
-    for brand in BRANDS:
-        if brand in domain_clean and brand != domain_base:
-            return True, brand
-        sim = levenshtein_ratio(brand, domain_base)
-        if 0.75 <= sim < 1.0:
-            return True, brand
+    """Check if domain base looks like a known brand"""
+    domain_clean = domain.replace('-', '').replace('_', '').replace('.', '')
+    parts = domain.replace('-', '.').replace('_', '.').split('.')
+    
+    # Check each part against brands
+    for part in parts:
+        for brand in BRANDS + EMAIL_BRANDS + BANKING_BRANDS:
+            # Exact match within part (but part is not the brand itself)
+            if brand in part and part != brand:
+                return True, brand
+            # Similarity check
+            sim = levenshtein_ratio(brand, part)
+            if 0.80 <= sim < 1.0 and len(part) >= 4:
+                return True, brand
+    
+    return False, None
+
+
+def has_brand_in_path(domain, path):
+    """Check if a known brand appears in path but NOT in actual domain"""
+    if not path:
+        return False, None
+    all_brands = BRANDS + EMAIL_BRANDS + BANKING_BRANDS
+    for brand in all_brands:
+        if brand in path.lower():
+            domain_base = domain.split('.')[0].lower()
+            if brand not in domain_base:
+                return True, brand
     return False, None
 
 
@@ -115,38 +139,51 @@ def analyze_url(url):
     if not domain:
         return 0, ["No domain"]
     
+    # 1. Trusted domain
     is_trusted = any(domain.endswith(td) for td in TRUSTED_DOMAINS)
     if is_trusted:
         score -= 20
         reasons.append(f"Trusted domain: {domain}")
     
+    # 2. Suspicious TLD
     for tld in SUSPICIOUS_TLDS:
         if domain.endswith(tld):
             score += 25
             reasons.append(f"Suspicious TLD: {tld}")
             break
     
+    # 3. Free hosting
     for fh in FREE_HOSTING:
         if fh in domain:
             score += 30
             reasons.append(f"Free hosting: {fh}")
             break
     
+    # 4. Shortener
     for sh in SHORTENERS:
         if sh in domain:
             score += 25
             reasons.append(f"Shortener: {sh}")
             break
     
-    if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", domain):
+    # 5. IP address
+    if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', domain):
         score += 40
         reasons.append("IP address instead of domain")
     
+    # 6. Brand impersonation in domain
     is_brand, brand_matched = looks_like_brand(domain)
     if is_brand and not is_trusted:
         score += 35
         reasons.append(f"Impersonates brand: {brand_matched}")
     
+    # 7. Brand in PATH (phishing)
+    has_path_brand, path_brand = has_brand_in_path(domain, path)
+    if has_path_brand and not is_trusted:
+        score += 45
+        reasons.append(f"Phishing: '{path_brand}' in path")
+    
+    # 8. Brand + action keywords
     full_text = domain + path
     has_brand = any(b in full_text for b in BRANDS)
     has_action = any(kw in full_text for kw in ACTION_KEYWORDS)
@@ -154,25 +191,46 @@ def analyze_url(url):
         score += 30
         reasons.append("Brand + action keywords")
     
-    if re.search(r"/[a-z0-9]{15,}", path):
+    # 9. Random path
+    if re.search(r'/[a-z0-9]{15,}', path):
         score += 25
-        reasons.append("Random path (possible hacked site)")
+        reasons.append("Random path")
     
-    if url_lower.startswith("http://"):
+    # 10. HTTP
+    if url_lower.startswith('http://'):
         score += 10
         reasons.append("Not HTTPS")
     
+    # 11. Long URL
     if len(url) > 100:
         score += 10
-        reasons.append(f"Very long URL ({len(url)} chars)")
+        reasons.append(f"Very long URL ({len(url)})")
     
-    if "@" in url_lower:
+    # 12. @ symbol
+    if '@' in url_lower:
         score += 30
-        reasons.append("@ symbol obfuscation")
+        reasons.append("@ symbol")
     
-    if domain.count(".") > 2:
+    # 13. Many subdomains
+    if domain.count('.') > 2:
         score += 10
         reasons.append("Many subdomains")
+    
+    # 14. NEW: Trusted domain + suspicious path
+    if is_trusted and any(kw in path for kw in ACTION_KEYWORDS):
+        score += 15
+        reasons.append("Trusted domain with suspicious path")
+    
+    # 15. NEW: Numbers in domain base (typosquatting)
+    domain_base = domain.split('.')[0]
+    if re.search(r'[0-9]', domain_base) and len(domain_base) > 4:
+        score += 15
+        reasons.append("Digits in domain (typosquatting)")
+    
+    # 16. Suspicious subdomain
+    if domain_base in ['test', 'demo', 'dev', 'tmp', 'temp']:
+        score += 15
+        reasons.append(f"Suspicious subdomain: {domain_base}")
     
     score = max(0, min(100, score))
     if not reasons:
