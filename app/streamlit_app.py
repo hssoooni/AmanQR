@@ -177,7 +177,21 @@ if image_source is not None:
     with st.spinner("🔍 Analyzing..."):
         rgb_for_decoder = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
         decoded_url = decode_qr(rgb_for_decoder)
+        
+        # Clean URL for display (remove pandas artifacts)
+        if decoded_url:
+            import re as _re
+            clean_display = _re.split(r'\s*Name:', decoded_url)[0]
+            clean_display = _re.sub(r'^\d+\s+', '', clean_display)
+            clean_display = clean_display.replace('\n', ' ').strip()
+            if 'http' in clean_display.lower():
+                clean_display = clean_display[clean_display.lower().index('http'):]
+            decoded_url_clean = clean_display
+        else:
+            decoded_url_clean = decoded_url
+        
         result = decide(decoded_url)
+        result['display_url'] = decoded_url_clean
     
     # Display result
     with col2:
@@ -201,7 +215,8 @@ if image_source is not None:
     if result["verdict"] != "ERROR":
         st.markdown("---")
         st.markdown("### 🔗 Decoded URL")
-        st.code(result['url'], language=None)
+        display_url = result.get('display_url', result.get('url', ''))
+        st.code(display_url, language=None)
         
         st.markdown("### 📋 Detection Reasons")
         st.markdown("*الأسباب / Reasons:*")
