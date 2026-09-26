@@ -7,14 +7,11 @@ import joblib
 import numpy as np
 from urllib.parse import urlparse
 
-from src.url_analyzer import analyze_url, clean_url, extract_features_for_ml
+from src.url_analyzer import (
+    analyze_url, clean_url, extract_features_for_ml,
+    TRUSTED_DOMAINS_ML
+)
 from src.whois_checker import whois_check
-
-
-# Load ML model
-MODEL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(MODEL_DIR, 'models', 'lightgbm_model.pkl')
-FEATURES_PATH = os.path.join(MODEL_DIR, 'models', 'feature_columns.pkl')
 
 try:
     ML_MODEL = joblib.load(MODEL_PATH)
@@ -78,11 +75,25 @@ def decide(url):
     ml_proba, ml_used = predict_ml(url_clean)
     ml_score = ml_proba * 100  # Convert to 0-100
     
-    # Combine (weighted)
-    # ML is strongest → 50% weight
-    # URL rules → 30%
-    # WHOIS → 20%
-    final_score = (url_score * 0.3) + (whois_score * 0.2) + (ml_score * 0.5)
+    # Check if domain is trusted
+    is_trusted = False
+    try:
+        parsed = urlparse(url_clean if '://' in url_clean else 'http://' + url_clean)
+        domain = parsed.netloc.lower()
+        is_trusted = any(domain.endswith(td) for td in TRUSTED_DOMAINS_ML)
+    except:
+        pass
+    
+    # Combine (weighted) — different weights for trusted domains
+    if is_trusted:
+        # Trusted domain: rely more on rules
+        final_score = (url_score * 0.5) + (whois_score * 0.3) + (ml_score * 0.2)
+        # Extra safety: cap score at 40 for trusted domains
+        final_score = min(final_score, 40)
+    else:
+        # Normal: ML is strongest
+        final_score = (url_score * 0.3) + (whois_score * 0.2) + (ml_score * 0.5)
+    
     final_score = max(0, min(100, final_score))
     
     # Verdict
