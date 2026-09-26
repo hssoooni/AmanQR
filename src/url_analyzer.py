@@ -1,3 +1,4 @@
+import numpy as np
 
 """
 AmanQR - URL Analyzer Module (v4)
@@ -269,3 +270,129 @@ def analyze_url(url):
         reasons = ["No suspicious indicators"]
     
     return score, reasons
+
+
+# ============================================================
+# ML Feature Extraction (must match training)
+# ============================================================
+from urllib.parse import urlparse
+from tldextract import extract as tld_extract
+
+SUSPICIOUS_TLDS_ML = {
+    '.tk', '.ml', '.ga', '.cf', '.gq', '.xyz', '.top', '.work', '.click',
+    '.country', '.stream', '.download', '.review', '.loan', '.date',
+    '.online', '.site', '.website', '.space', '.store', '.fun',
+}
+
+TRUSTED_DOMAINS_ML = {
+    'google.com', 'google.com.sa', 'youtube.com', 'facebook.com',
+    'wikipedia.org', 'twitter.com', 'instagram.com', 'amazon.com',
+    'apple.com', 'microsoft.com', 'linkedin.com', 'github.com',
+    'stackoverflow.com', 'reddit.com', 'taobao.com', 'alibaba.com',
+    'weibo.com', 'baidu.com', 'gov.sa', 'my.gov.sa', 'aramco.com',
+    'stc.com.sa', 'mobily.com.sa', 'zain.com.sa', 'sabb.com',
+    'alrajhibank.com.sa',
+}
+
+PHISHING_KEYWORDS_ML = [
+    'login', 'signin', 'verify', 'verification', 'account', 'update',
+    'secure', 'security', 'confirm', 'password', 'banking', 'wallet',
+    'authenticate', 'recovery', 'unlock', 'suspended', 'validation',
+    'service', 'enligne', 'online', 'inlogg', 'accedi', 'acceder',
+    'atualizacao', 'actualizar', 'track', 'tracking', 'delivery',
+    'colis', 'package', 'suivi', 'bookmark', 'redirect', 'goto',
+]
+
+BRANDS_ML = [
+    'google', 'youtube', 'facebook', 'instagram', 'twitter', 'whatsapp',
+    'amazon', 'apple', 'microsoft', 'netflix', 'paypal', 'linkedin',
+    'hotmail', 'outlook', 'gmail', 'yahoo', 'icloud',
+    'dhl', 'fedex', 'ups', 'chronopost',
+    'bank', 'visa', 'mastercard',
+]
+
+
+def extract_features_for_ml(url):
+    """Extract 28 features for ML model"""
+    if not url or not isinstance(url, str):
+        return None
+    
+    url = url.strip()
+    if not url:
+        return None
+    
+    try:
+        parsed = urlparse(url if '://' in url else 'http://' + url)
+        domain = parsed.netloc.lower()
+        path = parsed.path.lower()
+        query = parsed.query.lower()
+    except:
+        return None
+    
+    if not domain:
+        return None
+    
+    features = {}
+    features['url_length'] = len(url)
+    features['domain_length'] = len(domain)
+    features['path_length'] = len(path)
+    features['query_length'] = len(query)
+    features['num_dots'] = domain.count('.')
+    features['num_digits_url'] = sum(c.isdigit() for c in url)
+    features['num_digits_domain'] = sum(c.isdigit() for c in domain)
+    features['num_hyphens'] = url.count('-')
+    features['num_slashes'] = url.count('/')
+    features['num_underscores'] = url.count('_')
+    features['is_https'] = 1 if url.lower().startswith('https://') else 0
+    features['is_http'] = 1 if url.lower().startswith('http://') else 0
+    
+    try:
+        tld_info = tld_extract(domain)
+        tld = '.' + tld_info.suffix if tld_info.suffix else ''
+    except:
+        tld = ''
+    
+    features['suspicious_tld'] = 1 if tld in SUSPICIOUS_TLDS_ML else 0
+    features['trusted_domain'] = 1 if any(domain.endswith(td) for td in TRUSTED_DOMAINS_ML) else 0
+    features['num_subdomains'] = max(0, domain.count('.') - 1)
+    features['is_ip'] = 1 if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', domain) else 0
+    
+    shorteners = ['bit.ly', 'tinyurl.com', 't.co', 'goo.gl', 'ow.ly', 'is.gd', 'cutt.ly']
+    features['is_shortener'] = 1 if any(s in domain for s in shorteners) else 0
+    
+    free_hosting = ['000webhostapp.com', 'ukit.me', 'weebly.com', 'wixsite.com',
+                    'blogspot.com', 'wordpress.com', 'netlify.app', 'vercel.app']
+    features['is_free_hosting'] = 1 if any(f in domain for f in free_hosting) else 0
+    
+    full_text = domain + path + query
+    features['has_phishing_keyword'] = 1 if any(kw in full_text for kw in PHISHING_KEYWORDS_ML) else 0
+    features['num_phishing_keywords'] = sum(1 for kw in PHISHING_KEYWORDS_ML if kw in full_text)
+    features['has_brand'] = 1 if any(b in full_text for b in BRANDS_ML) else 0
+    features['num_brands'] = sum(1 for b in BRANDS_ML if b in full_text)
+    features['brand_in_path'] = 1 if any(b in path for b in BRANDS_ML) else 0
+    
+    if domain:
+        from collections import Counter
+        counts = Counter(domain)
+        probs = [c / len(domain) for c in counts.values()]
+        features['domain_entropy'] = -sum(p * np.log2(p) for p in probs if p > 0)
+    else:
+        features['domain_entropy'] = 0
+    
+    text_clean = re.sub(r'[^a-z]', '', domain)
+    max_consonant_run = 0
+    current_run = 0
+    for c in text_clean:
+        if c not in 'aeiou':
+            current_run += 1
+            max_consonant_run = max(max_consonant_run, current_run)
+        else:
+            current_run = 0
+    features['max_consonant_run'] = max_consonant_run
+    
+    vowels = sum(1 for c in text_clean if c in 'aeiou')
+    features['vowel_ratio'] = vowels / max(len(text_clean), 1)
+    features['has_random_path'] = 1 if re.search(r'/[a-z0-9]{10,}', path) else 0
+    features['digit_ratio_domain'] = sum(c.isdigit() for c in domain) / max(len(domain), 1)
+    
+    return features
