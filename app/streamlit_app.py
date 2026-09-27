@@ -218,10 +218,19 @@ if image_source is not None:
         display_url = result.get('display_url', result.get('url', ''))
         st.code(display_url, language=None)
         
+        # Show score breakdown if available
+        if result.get('api_vt', 0) > 0 or result.get('api_uh', 0) > 0:
+            st.caption(f"🔍 VirusTotal: {result.get('api_vt', 0):.0f}/100 | URLhaus: {result.get('api_uh', 0):.0f}/100")
+        
         st.markdown("### 📋 Detection Reasons")
         st.markdown("*الأسباب / Reasons:*")
+        
+        # Display reasons as a clean list
         for reason in result['reasons']:
-            st.markdown(f'<div class="reason-item">• {reason}</div>', unsafe_allow_html=True)
+            # Clean the reason text
+            clean_reason = str(reason).strip()
+            if clean_reason:
+                st.markdown(f"- {clean_reason}")
 
 
 # ============================================================
