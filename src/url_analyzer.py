@@ -85,6 +85,42 @@ TRUSTED_DOMAINS = {
     "alrajhibank.com.sa",
 }
 
+# Extended trusted domains (Saudi Arabia + global education)
+TRUSTED_DOMAINS_EXTENDED = {
+    # Government
+    'gov.sa', 'my.gov.sa', 'moe.gov.sa', 'moh.gov.sa',
+    'hrsd.gov.sa', 'tawakkalna.gov.sa', 'absher.gov.sa',
+    'najiz.sa', 'etec.gov.sa', 'sdaia.gov.sa',
+    'hasen.gov.sa', 'tahqaq.gov.sa',  # Saudi cybersecurity
+    
+    # Education (Saudi)
+    'edu.sa', 'ksu.edu.sa', 'kau.edu.sa', 'kfupm.edu.sa',
+    'pnu.edu.sa', 'imamu.edu.sa', 'qu.edu.sa', 'ut.edu.sa',
+    
+    # Global education
+    'coursera.org', 'udemy.com', 'edx.org', 'khanacademy.org',
+    'w3schools.com', 'freecodecamp.org',
+    
+    # Saudi training platforms
+    'futurex.sa', 'doroob.sa', 'misk.org.sa',
+    
+    # Saudi banks
+    'alrajhibank.com.sa', 'alahli.com', 'sabb.com',
+    'riyadbank.com', 'alinma.com', 'saib.com.sa', 'snb.com.sa',
+    
+    # Saudi companies
+    'aramco.com', 'sabic.com', 'stc.com.sa', 'mobily.com.sa',
+    'zain.com.sa', 'maaden.com.sa', 'neom.com',
+}
+
+# Trusted TLD suffixes (auto-trusted)
+TRUSTED_TLD_SUFFIXES = [
+    '.gov.sa', '.edu.sa', '.mil.sa', '.gov', '.edu',
+    '.gov.uk', '.gov.ae', '.gov.eg', '.edu.ae', '.edu.eg',
+]
+
+
+
 
 def clean_url(text):
     """Remove pandas artifacts from URL string"""
@@ -158,10 +194,21 @@ def analyze_url(url):
     if not domain:
         return 0, ["No domain"]
     
-    # 1. Trusted domain
-    is_trusted = any(domain.endswith(td) for td in TRUSTED_DOMAINS)
+    # 1. Trusted domain (extended)
+    is_trusted = False
+    
+    # Check exact trusted domains
+    if any(domain.endswith(td) for td in TRUSTED_DOMAINS):
+        is_trusted = True
+    # Check extended trusted
+    elif any(domain.endswith(td) for td in TRUSTED_DOMAINS_EXTENDED):
+        is_trusted = True
+    # Check trusted TLD suffixes (.gov.sa, .edu.sa)
+    elif any(domain.endswith(suffix) for suffix in TRUSTED_TLD_SUFFIXES):
+        is_trusted = True
+    
     if is_trusted:
-        score -= 20
+        score -= 30
         reasons.append(f"Trusted domain: {domain}")
     
     # 2. Suspicious TLD
