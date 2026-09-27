@@ -8,3 +8,10 @@ data/
 .DS_Store
 .vscode/
 .idea/
+
+# Environment variables
+.env
+
+# Service Account (sensitive)
+config/
+.env
