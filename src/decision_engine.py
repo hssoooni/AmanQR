@@ -79,6 +79,22 @@ def is_trusted_tld(domain):
     return any(domain.endswith(suffix) for suffix in TRUSTED_TLD_SUFFIXES)
 
 
+
+
+def has_valid_ssl_check(domain):
+    """Simple SSL validation"""
+    try:
+        import ssl
+        import socket
+        context = ssl.create_default_context()
+        with socket.create_connection((domain, 443), timeout=3) as sock:
+            with context.wrap_socket(sock, server_hostname=domain) as ssock:
+                cert = ssock.getpeercert()
+                return bool(cert)
+    except Exception:
+        return False
+
+
 def decide(url):
     """
     Intelligent decision: URL + WHOIS + ML + DNS/SSL checks
