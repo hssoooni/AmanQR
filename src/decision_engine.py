@@ -151,9 +151,15 @@ def decide(url):
     # ============================================================
     # Combine (Intelligent weighting)
     # ============================================================
+    # Smart trust factors
+    has_https = str(url_clean).lower().startswith('https://')
+    
     if is_gov_edu:
         # Gov/Edu TLDs are legally protected → LIKELY SAFE
         final_score = min(url_score * 0.3, 10)
+    elif has_https and url_score < 15:
+        # HTTPS + minimal URL flags → SAFE (even if ML thinks otherwise)
+        final_score = min(url_score * 0.4 + ml_score * 0.15, 18)
     else:
         # Weighted decision
         final_score = (url_score * 0.35) + (whois_score * 0.25) + (ml_score * 0.40)
