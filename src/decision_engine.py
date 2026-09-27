@@ -149,20 +149,66 @@ def decide(url):
     is_gov_edu = is_trusted_tld(domain) if domain else False
     
     # ============================================================
-    # Combine (Intelligent weighting)
     # ============================================================
-    # Smart trust factors
+    # OBJECTIVE TRUST SYSTEM (no hard-coded lists, no bias)
+    # ============================================================
+    
+    # === Objective signals ===
     has_https = str(url_clean).lower().startswith('https://')
     
+    # 1. Domain age (from WHOIS)
+    domain_is_old = False
+    domain_is_new = False
+    if whois_reason:
+        whois_str = str(whois_reason).lower()
+        if 'old' in whois_str or 'years' in whois_str:
+            domain_is_old = True
+        elif 'new' in whois_str or 'days' in whois_str or 'young' in whois_str:
+            domain_is_new = True
+    
+    # 2. URL has NO serious red flags
+    url_is_clean = url_score < 20
+    
+    # 3. Check for phishing keywords in PATH only (not domain)
+    path_has_phishing = False
+    try:
+        from urllib.parse import urlparse as _up
+        _p = _up(url_clean if '://' in url_clean else 'http://' + url_clean)
+        _path = _p.path.lower()
+        phishing_words = ['login', 'signin', 'verify', 'account', 'update', 'password']
+        path_has_phishing = any(w in _path for w in phishing_words)
+    except:
+        pass
+    
+    # 4. TLD check (only major TLDs)
+    MAJOR_TLDS = ['.com', '.org', '.net', '.edu', '.gov', '.io', 
+                  '.sa', '.ae', '.eg', '.uk', '.de', '.fr', '.jp', '.cn']
+    has_major_tld = any(domain.endswith(t) for t in MAJOR_TLDS)
+    
+    # ============================================================
+    # DECISION LOGIC (objective)
+    # ============================================================
+    
+    # Trust Level 1: gov.sa / edu.sa (legal) → SAFE
     if is_gov_edu:
-        # Gov/Edu TLDs are legally protected → LIKELY SAFE
-        final_score = min(url_score * 0.3, 10)
-    elif has_https and url_score < 15:
-        # HTTPS + minimal URL flags → SAFE (even if ML thinks otherwise)
-        final_score = min(url_score * 0.4 + ml_score * 0.15, 18)
+        final_score = 5.0  # SAFE
+    
+    # Trust Level 2: HTTPS + old domain + no red flags → SAFE
+    elif (has_https and domain_is_old and url_is_clean and not path_has_phishing):
+        final_score = 8.0  # SAFE
+    
+    # Trust Level 3: HTTPS + major TLD + no red flags → SAFE (even if new)
+    elif (has_https and has_major_tld and url_score < 15 and not path_has_phishing):
+        final_score = 12.0  # SAFE
+    
+    # Trust Level 4: has suspicious signs → evaluate carefully
     else:
         # Weighted decision
         final_score = (url_score * 0.35) + (whois_score * 0.25) + (ml_score * 0.40)
+        
+        # If HTTPS + no red flags + ML moderate → SUSPICIOUS (not MALICIOUS)
+        if has_https and url_score < 25 and ml_proba < 0.85:
+            final_score = min(final_score, 55)
     
     final_score = max(0, min(100, final_score))
     
@@ -175,9 +221,9 @@ def decide(url):
     elif final_score >= 30:
         verdict, emoji, color = "SUSPICIOUS", "🟡", "orange"
         confidence = min(95, 40 + final_score * 0.6)
-    elif final_score <= 10:
+    elif final_score <= 20:
         verdict, emoji, color = "LIKELY SAFE", "🟢", "green"
-        confidence = min(99, 60 + (10 - final_score) * 2)
+        confidence = min(99, 70 + (20 - final_score) * 1.5)
     else:
         verdict, emoji, color = "UNKNOWN", "⚪", "gray"
         confidence = 50
