@@ -194,22 +194,14 @@ def analyze_url(url):
     if not domain:
         return 0, ["No domain"]
     
-    # 1. Trusted domain (extended)
+    # 1. Trusted TLD ONLY (objective rule — .gov.sa, .edu.sa)
     is_trusted = False
     
-    # Check exact trusted domains
-    if any(domain.endswith(td) for td in TRUSTED_DOMAINS):
+    # Only TLD-based trust (legal, objective)
+    if any(domain.endswith(suffix) for suffix in TRUSTED_TLD_SUFFIXES):
         is_trusted = True
-    # Check extended trusted
-    elif any(domain.endswith(td) for td in TRUSTED_DOMAINS_EXTENDED):
-        is_trusted = True
-    # Check trusted TLD suffixes (.gov.sa, .edu.sa)
-    elif any(domain.endswith(suffix) for suffix in TRUSTED_TLD_SUFFIXES):
-        is_trusted = True
-    
-    if is_trusted:
-        score -= 30
-        reasons.append(f"Trusted domain: {domain}")
+        score -= 40
+        reasons.append(f"✅ Official domain ({domain.split('.')[-2]}.{domain.split('.')[-1]})")
     
     # 2. Suspicious TLD
     for tld in SUSPICIOUS_TLDS:
@@ -282,10 +274,7 @@ def analyze_url(url):
         score += 10
         reasons.append("Many subdomains")
     
-    # 14. NEW: Trusted domain + suspicious path
-    if is_trusted and any(kw in path for kw in ACTION_KEYWORDS):
-        score += 15
-        reasons.append("Trusted domain with suspicious path")
+    # 14. (removed: trusted domain + suspicious path rule)
     
     # 15. NEW: Numbers in domain base (typosquatting)
     domain_base = domain.split('.')[0]
