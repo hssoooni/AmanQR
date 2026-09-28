@@ -347,6 +347,14 @@ def analyze_url(url):
     
     if not domain:
         return 0, ["No domain"]
+
+    # ---- 0. KNOWN MALICIOUS DOMAINS ----
+    for mal_domain in KNOWN_MALICIOUS_DOMAINS:
+        if mal_domain in domain:
+            score += 80
+            reasons.append(f"🚨 Known malicious domain: {mal_domain}")
+            break
+
     
     # 1. Trusted TLD ONLY (objective rule — .gov.sa, .edu.sa)
     is_trusted = False
