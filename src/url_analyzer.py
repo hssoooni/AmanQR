@@ -370,6 +370,40 @@ def analyze_url(url):
     
     if not domain:
         return 0, ["No domain"]
+    
+    # ============================================================
+    # FREEDNS + GIBBERISH + IoT DETECTION (CRITICAL)
+    # ============================================================
+    # 1. Free DNS services
+    FREEDNS_LIST = ['.work.gd', '.ddns.net', '.no-ip.org', '.hopto.org',
+                    '.zapto.org', '.dynu.com', '.chickenkiller.com',
+                    '.mooo.com', '.3utilities.com', '.sytes.net',
+                    '.myftp.org', '.servebeer.com', '.dynns.com']
+    for fdns in FREEDNS_LIST:
+        if fdns in domain or domain.endswith(fdns):
+            score += 40
+            reasons.append(f"🚨 Free DNS service: {fdns}")
+            break
+    
+    # 2. Gibberish subdomain
+    domain_base = domain.split('.')[0] if domain else ''
+    if len(domain_base) >= 10:
+        vowels = sum(1 for c in domain_base if c in 'aeiou')
+        vowel_ratio = vowels / max(len(domain_base), 1)
+        
+        if vowel_ratio < 0.25:
+            score += 35
+            reasons.append(f"🚨 Random gibberish domain: {domain_base[:20]}")
+    
+    # 3. IoT malware architecture paths
+    IOT_ARCHS = ['mipsel', 'mips', 'arm7', 'arm', 'x86', 'i386', 
+                 'sparc', 'ppc', 'sh4', 'm68k', 'aarch64', 'armv7']
+    for arch in IOT_ARCHS:
+        if path.endswith(f'/{arch}') or path == f'/{arch}' or f'/{arch}/' in path:
+            score += 50
+            reasons.append(f"🚨 IoT malware binary: /{arch}")
+            break
+    
 
     # ---- 0. KNOWN MALICIOUS DOMAINS ----
     for mal_domain in KNOWN_MALICIOUS_DOMAINS:
