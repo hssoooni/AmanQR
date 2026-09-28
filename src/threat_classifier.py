@@ -69,6 +69,25 @@ def classify_threat(url, analysis_result):
     }
     
     # ============================================================
+    # 0. SCRIPT FILES = MALWARE (highest priority)
+    # ============================================================
+    dangerous_scripts = ['.sh', '.ps1', '.bat', '.cmd', '.vbs', '.hta', 
+                         '.wsf', '.exe', '.bin', '.dll', '.scr', '.pif']
+    
+    for ext in dangerous_scripts:
+        if path.endswith(ext) or f'{ext}?' in url_lower or f'{ext}#' in url_lower:
+            threat['attack_type'] = 'MALWARE'
+            threat['attack_type_ar'] = 'برمجية خبيثة'
+            threat['severity'] = 'CRITICAL'
+            threat['severity_ar'] = 'حرج'
+            threat['icon'] = '🦠'
+            threat['color'] = 'red'
+            threat['indicators'] = [f'Dangerous script file: {ext}']
+            threat['explanation'] = 'URL downloads executable/script file'
+            threat['explanation_ar'] = 'الرابط يحمّل ملف تنفيذي أو سكريبت'
+            return threat
+    
+    # ============================================================
     # 1. MALWARE DISTRIBUTION
     # ============================================================
     malware_indicators = []
