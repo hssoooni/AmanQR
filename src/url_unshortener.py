@@ -1,7 +1,8 @@
 """
-AmanQR - URL Unshortener
-Expands shortened URLs to reveal their true destination.
+AmanQR - URL Unshortener v2
+Handles: HTTP redirects + HTML meta refresh + JS redirects
 """
+import re
 import requests
 from urllib.parse import urlparse
 
@@ -25,9 +26,35 @@ def is_shortener(url):
         return False
 
 
-def expand_url(short_url, max_hops=5, timeout=5):
+def extract_redirects_from_html(html, base_url):
+    """Extract redirect targets from HTML (meta refresh, JS)"""
+    redirects = []
+    
+    # Meta refresh
+    meta_match = re.search(
+        r'<meta[^>]*http-equiv=["\']refresh["\'][^>]*content=["\']\d+;\s*url=([^"\'>]+)',
+        html, re.IGNORECASE
+    )
+    if meta_match:
+        redirects.append(meta_match.group(1).strip())
+    
+    # JavaScript window.location
+    js_patterns = [
+        r'window\.location(?:\.href)?\s*=\s*["\']([^"\']+)["\']',
+        r'location\.replace\(["\']([^"\']+)["\']\)',
+        r'location\.href\s*=\s*["\']([^"\']+)["\']',
+    ]
+    
+    for pattern in js_patterns:
+        matches = re.findall(pattern, html, re.IGNORECASE)
+        redirects.extend(matches)
+    
+    return redirects
+
+
+def expand_url(short_url, max_hops=5, timeout=10):
     """
-    Expand a shortened URL by following redirects.
+    Expand a shortened URL using multiple techniques.
     Returns: (final_url, redirect_chain, success)
     """
     if not short_url:
@@ -39,32 +66,63 @@ def expand_url(short_url, max_hops=5, timeout=5):
     redirect_chain = [short_url]
     current_url = short_url
     
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                      'AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/120.0.0.0 Safari/537.36'
+    }
+    
     for hop in range(max_hops):
         try:
-            response = requests.head(
+            # Use GET (not HEAD) to get HTML content
+            response = requests.get(
                 current_url,
                 allow_redirects=False,
                 timeout=timeout,
-                headers={'User-Agent': 'Mozilla/5.0 (compatible; AmanQR/1.0)'}
+                headers=headers,
             )
             
+            # 1. HTTP redirects (301, 302, etc.)
             if response.status_code in (301, 302, 303, 307, 308):
                 next_url = response.headers.get('Location')
-                if not next_url:
-                    break
-                
+                if next_url:
+                    if next_url.startswith('/'):
+                        parsed = urlparse(current_url)
+                        next_url = f"{parsed.scheme}://{parsed.netloc}{next_url}"
+                    
+                    redirect_chain.append(next_url)
+                    current_url = next_url
+                    
+                    if not is_shortener(current_url):
+                        break
+                    continue
+            
+            # 2. HTML-based redirects
+            html = response.text
+            html_redirects = extract_redirects_from_html(html, current_url)
+            
+            if html_redirects:
+                next_url = html_redirects[0]
+                # Handle relative URLs
                 if next_url.startswith('/'):
                     parsed = urlparse(current_url)
                     next_url = f"{parsed.scheme}://{parsed.netloc}{next_url}"
+                elif not next_url.startswith(('http://', 'https://')):
+                    # Relative path
+                    parsed = urlparse(current_url)
+                    next_url = f"{parsed.scheme}://{parsed.netloc}/{next_url.lstrip('/')}"
                 
-                redirect_chain.append(next_url)
-                current_url = next_url
-                
-                if not is_shortener(current_url):
-                    break
-            else:
-                break
-                
+                if next_url != current_url:
+                    redirect_chain.append(next_url)
+                    current_url = next_url
+                    
+                    if not is_shortener(current_url):
+                        break
+                    continue
+            
+            # No more redirects
+            break
+            
         except requests.exceptions.Timeout:
             return current_url, redirect_chain, False
         except Exception:
