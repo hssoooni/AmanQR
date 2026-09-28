@@ -309,6 +309,24 @@ def check_hosting_abuse(domain, path):
     return score, reasons
 
 
+
+
+# ============================================================
+# Known malicious domains (from URLhaus, threat feeds)
+# Update regularly from: https://urlhaus.abuse.ch/
+# ============================================================
+KNOWN_MALICIOUS_DOMAINS = {
+    # From URLhaus recent (examples)
+    'trust-soft.cc',
+    'rabbids.cc',
+    'polysupport.team',
+    'cdn.jsdelivr.net',
+    'downf468.com',
+    'moziloader.com',
+    # Add more from URLhaus as discovered
+}
+
+
 def analyze_url(url):
     if not url:
         return 0, ["No URL"]
