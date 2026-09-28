@@ -55,7 +55,7 @@ def whois_check(url):
             creation = creation[0]
         
         if creation is None:
-            return 15, "WHOIS information hidden"
+            return 5, "WHOIS information hidden"
         
         if creation.tzinfo is None:
             creation = creation.replace(tzinfo=timezone.utc)

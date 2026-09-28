@@ -206,8 +206,8 @@ def analyze_url(url):
     # 2. Suspicious TLD
     for tld in SUSPICIOUS_TLDS:
         if domain.endswith(tld):
-            score += 25
-            reasons.append(f"Suspicious TLD: {tld}")
+            score += 5
+            reasons.append(f"ℹ️ TLD: {tld}")
             break
     
     # 3. Free hosting

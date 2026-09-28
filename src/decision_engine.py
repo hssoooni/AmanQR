@@ -216,10 +216,10 @@ def decide(url):
     elif is_gov_edu:
         final_score = 5.0
     
-    # Priority 5: HTTPS + old domain (6+ years) + no attack indicators = SAFE
-    # This overrides TLD suspicion
-    elif has_https and domain_is_old and attack_score == 0:
-        final_score = min(15.0, url_score * 0.3)
+    # Priority 5: HTTPS + old domain (2+ years) + no attack = SAFE
+    # Override TLD + WHOIS hidden
+    elif has_https and domain_is_old and attack_score == 0 and url_score < 30:
+        final_score = 12.0
     
     # Priority 6: HTTPS + clean
     elif has_https and url_score < 15:
