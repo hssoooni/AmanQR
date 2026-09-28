@@ -153,32 +153,62 @@ def classify_threat(url, analysis_result):
         return threat
     
     # ============================================================
-    # 4. SCAM / FRAUD
+        # ============================================================
+    # 4. SCAM / FRAUD / SPAM
     # ============================================================
     scam_indicators = []
     
-    if any(tld in domain for tld in ['.tk', '.ml', '.ga', '.cf', '.gq']):
-        scam_indicators.append(f"Free TLD ({domain.split('.')[-1]})")
-    
-    if any(kw in url_lower for kw in ['free', 'winner', 'prize', 'lottery', 'gift']):
-        scam_indicators.append("Scam keywords")
-    
-    # Free hosting abuse
-    free_hosting = [
-        'blogspot.com', 'blogger.com', 'wordpress.com', 'weebly.com',
-        'wixsite.com', '000webhostapp.com', 'ukit.me',
-        'github.io', 'netlify.app', 'vercel.app',
-        'pastebin.com', 'medium.com', 'tumblr.com',
-        'ghost.io', 'hashnode.dev', 'dev.to',
+    # Suspicious TLDs (comprehensive list)
+    suspicious_tlds = [
+        '.tk', '.ml', '.ga', '.cf', '.gq', '.xyz', '.top',
+        '.work', '.click', '.country', '.stream', '.download',
+        '.review', '.loan', '.date', '.gdn', '.men', '.racing',
+        '.blog', '.site', '.online', '.website', '.space',
+        '.store', '.fun', '.live', '.icu', '.rest',
+        '.cyou', '.monster', '.quest', '.bar', '.bond',
     ]
-    if any(fh in domain for fh in free_hosting):
-        scam_indicators.append(f"Hosted on {domain.split('.')[1] if len(domain.split('.')) > 1 else 'free service'}")
     
-    # Random path (common in abuse)
-    if re.search(r'/[a-z0-9]{7,}', path) and not any(kw in path for kw in 
-        ['about', 'contact', 'product', 'service', 'blog', 'news', 'home', 'post']):
-        scam_indicators.append("Random path")
+    matched_tld = None
+    for tld in suspicious_tlds:
+        if domain.endswith(tld):
+            scam_indicators.append(f"High-risk TLD ({tld})")
+            matched_tld = tld
+            break
     
+    # Scam keywords
+    scam_words = ['free', 'winner', 'prize', 'lottery', 'gift', 
+                  'casino', 'viagra', 'pills', 'earn', 'money']
+    for word in scam_words:
+        if word in url_lower:
+            scam_indicators.append(f"Scam keyword: {word}")
+            break
+    
+    # Random path on high-risk TLD (common in spam)
+    if matched_tld and re.search(r'/[a-z0-9]{5,}', path):
+        scam_indicators.append("Random path on high-risk TLD")
+    
+    # Short random path
+    if re.search(r'/[a-z0-9]{6,10}$', path):
+        scam_indicators.append("Suspicious random path")
+    
+    # HTTP (no encryption) + high-risk TLD
+    if not url_lower.startswith('https://') and matched_tld:
+        scam_indicators.append("No HTTPS on high-risk TLD")
+    
+    # Classify as SCAM if 2+ indicators OR 1 strong indicator
+    if len(scam_indicators) >= 2:
+        threat['attack_type'] = 'SCAM'
+        threat['attack_type_ar'] = 'احتيال / سبام'
+        threat['severity'] = 'HIGH'
+        threat['severity_ar'] = 'عالي'
+        threat['icon'] = '💰'
+        threat['color'] = 'orange'
+        threat['indicators'] = scam_indicators
+        threat['explanation'] = 'URL exhibits scam or spam patterns'
+        threat['explanation_ar'] = 'الرابط يعرض أنماط احتيال أو سبام'
+        return threat
+    
+    # Original condition (kept for compatibility)
     if len(scam_indicators) >= 1 and url_score >= 30:
         threat['attack_type'] = 'SCAM'
         threat['attack_type_ar'] = 'احتيال'
