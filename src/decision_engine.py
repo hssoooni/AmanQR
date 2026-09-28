@@ -13,6 +13,7 @@ from src.url_analyzer import (
 )
 from src.whois_checker import whois_check
 from src.api_checker import check_external_apis
+from src.url_unshortener import analyze_with_unshortening, is_shortener
 
 
 MODEL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -138,9 +139,20 @@ def decide(url):
     
     url_clean = clean_url(url) or url
     
-    # Parse
+    # NEW: Unshorten URL
+    unshort_result = {"is_shortened": False, "final_url": url_clean, "redirect_chain": []}
+    actual_url = url_clean
     try:
-        parsed = urlparse(url_clean if '://' in url_clean else 'http://' + url_clean)
+        if is_shortener(url_clean):
+            unshort_result = analyze_with_unshortening(url_clean)
+            if unshort_result['success'] and unshort_result['final_url'] != url_clean:
+                actual_url = unshort_result['final_url']
+    except Exception:
+        pass
+    
+    # Parse (use actual URL)
+    try:
+        parsed = urlparse(actual_url if '://' in actual_url else 'http://' + actual_url)
         domain = parsed.netloc.lower()
         path = parsed.path.lower()
     except Exception:
@@ -157,12 +169,18 @@ def decide(url):
     # ============================================================
     # Layer 2: URL rules
     # ============================================================
-    url_score, url_reasons = analyze_url(url_clean)
+    url_score, url_reasons = analyze_url(actual_url)
+    
+    if unshort_result['is_shortened']:
+        if unshort_result['success']:
+            url_reasons.insert(0, f"🔗 المختصر: {url_clean[:40]} → {actual_url[:50]}")
+        else:
+            url_reasons.insert(0, f"⚠️ رابط مختصر: {url_clean[:40]} (لم يُفك)")
     
     # ============================================================
     # Layer 3: ML
     # ============================================================
-    ml_proba, ml_used = predict_ml(url_clean)
+    ml_proba, ml_used = predict_ml(actual_url)
     ml_score = ml_proba * 100
     
     # ============================================================
@@ -173,7 +191,7 @@ def decide(url):
     domain_is_old = False
     if attack_score >= 20 or url_score >= 20:
         try:
-            whois_score, whois_reason = whois_check(url_clean)
+            whois_score, whois_reason = whois_check(actual_url)
             if whois_reason and 'old' in str(whois_reason).lower():
                 domain_is_old = True
         except Exception:
@@ -184,7 +202,7 @@ def decide(url):
     # ============================================================
     api_result = {"score": 0, "reasons": [], "vt_score": 0, "uh_score": 0}
     try:
-        api_result = check_external_apis(url_clean)
+        api_result = check_external_apis(actual_url)
     except Exception as e:
         pass
     
