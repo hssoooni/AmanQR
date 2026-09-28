@@ -12,28 +12,72 @@ No installation needed. Just upload a QR image.
 
 ## What it Detects
 
-- Phishing - Fake login pages, email impersonation
-- Malicious domains - Suspicious TLDs (.xyz, .tk), new domains
-- Hacked sites - Compromised admin panels, exposed files
-- Brand impersonation - Typosquatting (paypa1, goog1e)
-- Suspicious patterns - Random paths, IP addresses, shorteners
+- Phishing attacks - Fake login pages, email impersonation
+- Malicious domains - Suspicious TLDs, new domains, hacked sites
+- Brand impersonation - Typosquatting (paypa1, goog1e), fake PayPal/Apple/Microsoft
+- Hacked websites - Compromised admin panels, exposed files
+- Suspicious patterns - Random paths, IP addresses, URL shorteners
+- Quishing attacks - QR-specific phishing threats
 
 ## How it Works
 
-AmanQR uses a 4-layer hybrid detection system:
+AmanQR uses a 5-layer hybrid detection system:
 
-1. QR Decoder (OpenCV) - Extracts URL from image
-2. URL Analyzer (18 rules) - Pattern-based threat detection
-3. WHOIS Checker - Domain age and hidden WHOIS detection
-4. Decision Engine - Combines signals with confidence scoring
+### Layer 1: QR Decoder
+- zxing-cpp (fast and accurate)
+- Extracts URL from QR image
+
+### Layer 2: URL Analyzer (25+ rules)
+- Phishing keywords detection
+- Typosquatting detection (Levenshtein distance)
+- Suspicious TLDs (.xyz, .tk, .online)
+- Brand impersonation
+- Random path detection
+- IP address detection
+
+### Layer 3: WHOIS Checker
+- Domain age analysis
+- Hidden WHOIS detection
+- New domain flags
+
+### Layer 4: Machine Learning (LightGBM)
+- 28 engineered features
+- Trained on 200,000 QR codes
+- 99.5 percent accuracy on hold-out test set
+- Features include: URL entropy, vowel ratio, domain length, subdomain count
+
+### Layer 5: External APIs
+- VirusTotal: 70+ antivirus engines
+- URLhaus: abuse.ch malicious URL database
+
+## Results
+
+Test Accuracy: 99.5 percent
+Dataset: 200,000 QR codes (Kaggle - Samah Sadiq)
+Features: 28
+Model Size: 611 KB
+Response Time: less than 3 seconds
+
+## What Makes AmanQR Different
+
+- 100 percent Free - No hidden costs
+- Bilingual - Arabic and English interface
+- Privacy First - Images are NOT stored
+- Open Source - MIT License
+- Fast - Real-time analysis
+- Transparent - Every decision is explained
+- Available Everywhere - Works on any device
 
 ## Tech Stack
 
 - Python 3
-- OpenCV - QR decoding
+- zxing-cpp - QR code decoding
+- LightGBM - Machine Learning classifier
 - python-whois - Domain analysis
+- VirusTotal API - 70+ antivirus engines
+- URLhaus API - Malicious URL database
 - Streamlit - Web interface
-- 18 detection rules - Handcrafted threat patterns
+- GitHub - Version control
 
 ## Privacy
 
@@ -44,11 +88,12 @@ AmanQR uses a 4-layer hybrid detection system:
 
 ## Use Cases
 
-- Employees checking QR codes in emails
+- Employees checking QR codes in company emails
 - Students verifying QR assignments
 - Banking customers scanning payment QRs
 - Restaurant menus safety check
 - Anyone scanning a QR from an unknown source
+- Cybersecurity awareness training
 
 ## Run Locally
 
@@ -67,7 +112,10 @@ MIT License - Free to use, modify, and distribute.
 
 ## Acknowledgments
 
-Dataset: Kaggle - Malicious and Benign QR Codes by Samah Sadiq (200,000 QR codes)
+- Dataset: Kaggle - Malicious and Benign QR Codes by Samah Sadiq (200,000 QR codes)
+- VirusTotal - Antivirus API
+- URLhaus (abuse.ch) - Malicious URL database
+- Streamlit Community Cloud - Free hosting
 
 ## Contact
 
