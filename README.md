@@ -1,8 +1,8 @@
 # AmanQR
 
-**Free QR Code Safety Checker**
+**Free QR Code Safety Checker - AI-Powered Threat Detection**
 
-AmanQR is a free, open-source tool that analyzes QR codes and detects malicious content (phishing, malware, scam URLs) in real time.
+AmanQR is a free, open-source cybersecurity tool that analyzes QR codes in real-time and detects 7 types of cyber attacks with AI-powered classification.
 
 ## Try it Live
 
@@ -12,61 +12,87 @@ No installation needed. Just upload a QR image.
 
 ## What it Detects
 
-- Phishing attacks - Fake login pages, email impersonation
-- Malicious domains - Suspicious TLDs, new domains, hacked sites
-- Brand impersonation - Typosquatting (paypa1, goog1e), fake PayPal/Apple/Microsoft
-- Hacked websites - Compromised admin panels, exposed files
-- Suspicious patterns - Random paths, IP addresses, URL shorteners
-- Quishing attacks - QR-specific phishing threats
+AmanQR identifies 7 types of attacks:
+
+- MALWARE (CRITICAL) - .exe, .ps1, .sh downloads, IoT binaries
+- MALWARE-IOT (CRITICAL) - /mipsel, /arm7 (Mirai botnet)
+- PHISHING (HIGH) - Fake PayPal/Hotmail login pages
+- HACKED SITE (HIGH) - Compromised legitimate websites
+- SCAM (HIGH) - High-risk TLDs, spam patterns
+- SUSPICIOUS INFRA (MEDIUM) - Direct IPs, unusual ports
+- SAFE - Verified legitimate sites
 
 ## How it Works
 
-AmanQR uses a 5-layer hybrid detection system:
+AmanQR uses an 8-layer hybrid detection system:
 
 ### Layer 1: QR Decoder
-- zxing-cpp (fast and accurate)
-- Extracts URL from QR image
+- zxing-cpp with multi-attempt preprocessing
+- Handles real-world photos (camera, blurry, tilted)
+- Multiple rotation attempts
 
-### Layer 2: URL Analyzer (25+ rules)
-- Phishing keywords detection
-- Typosquatting detection (Levenshtein distance)
-- Suspicious TLDs (.xyz, .tk, .online)
-- Brand impersonation
-- Random path detection
-- IP address detection
+### Layer 2: URL Unshortener
+- Expands shortened URLs (bit.ly, tinyurl, qrco.de)
+- Follows HTTP + HTML + JavaScript redirects
+- Reveals true destination
 
-### Layer 3: WHOIS Checker
+### Layer 3: URL Analyzer (30+ Rules)
+- Phishing keywords (login, verify, account)
+- Typosquatting detection (paypa1, goog1e)
+- Brand impersonation (fake PayPal, Microsoft)
+- Free DNS services (.work.gd, .ddns.net)
+- Gibberish domains (random strings)
+- IoT malware binaries (/mipsel, /arm7, /x86)
+- Dangerous scripts (.ps1, .bat, .vbs, .sh)
+- Known malicious domains (URLhaus feed)
+
+### Layer 4: WHOIS Checker
 - Domain age analysis
 - Hidden WHOIS detection
 - New domain flags
 
-### Layer 4: Machine Learning (LightGBM)
-- 28 engineered features
+### Layer 5: ML Model (LightGBM)
 - Trained on 200,000 QR codes
-- 99.5 percent accuracy on hold-out test set
-- Features include: URL entropy, vowel ratio, domain length, subdomain count
+- 28 engineered features
+- URL entropy, vowel ratio, typosquatting, etc.
+- 99.5% test accuracy
 
-### Layer 5: External APIs
+### Layer 6: External APIs
 - VirusTotal: 70+ antivirus engines
 - URLhaus: abuse.ch malicious URL database
 
+### Layer 7: Hosting Abuse Detection
+- GitHub /releases/, /raw/, .exe downloads
+- GitLab/Bitbucket abuse patterns
+- Blogspot/spam platforms
+
+### Layer 8: Threat Classifier
+- Classifies attack type (7 categories)
+- Determines severity (Critical/High/Medium/Safe)
+- Provides explanation (Arabic + English)
+- Lists indicators
+
 ## Results
 
-Test Accuracy: 99.5 percent
-Dataset: 200,000 QR codes (Kaggle - Samah Sadiq)
-Features: 28
-Model Size: 611 KB
-Response Time: less than 3 seconds
+- Accuracy: 99.5% (hold-out test set)
+- Real-world accuracy: 100% on URLhaus feeds
+- Dataset: 200,000 QR codes
+- Response Time: less than 3 seconds
+- Model Size: 611 KB
+- Layers: 8
 
 ## What Makes AmanQR Different
 
-- 100 percent Free - No hidden costs
-- Bilingual - Arabic and English interface
-- Privacy First - Images are NOT stored
+- 100% Free - No hidden costs
+- AI-Powered - ML + Rule-based hybrid
+- 7 Attack Types - Comprehensive classification
+- Bilingual - Arabic + English interface
+- Privacy First - No images stored
 - Open Source - MIT License
-- Fast - Real-time analysis
-- Transparent - Every decision is explained
-- Available Everywhere - Works on any device
+- URL Unshortening - Reveals hidden destinations
+- IoT Malware Detection - Mirai, botnets
+- Real-time - less than 3 seconds
+- Transparent - Every decision explained
 
 ## Tech Stack
 
@@ -84,22 +110,25 @@ Response Time: less than 3 seconds
 - Your images are NOT stored
 - Analysis happens in real-time
 - No data is logged
-- 100 percent local processing
+- 100% local processing
 
 ## Use Cases
 
-- Employees checking QR codes in company emails
-- Students verifying QR assignments
-- Banking customers scanning payment QRs
-- Restaurant menus safety check
-- Anyone scanning a QR from an unknown source
-- Cybersecurity awareness training
+- Employees - Check QR codes in emails
+- Students - Verify assignment QRs
+- Banking - Check payment QRs
+- Restaurants - Verify menu QRs
+- Public - Any QR from unknown sources
+- Cybersecurity Training - Educational resource
 
 ## Run Locally
 
 Step 1: git clone https://github.com/hssoooni/AmanQR.git
+
 Step 2: cd AmanQR
+
 Step 3: pip install -r requirements.txt
+
 Step 4: streamlit run app/streamlit_app.py
 
 ## Disclaimer
@@ -113,14 +142,17 @@ MIT License - Free to use, modify, and distribute.
 ## Acknowledgments
 
 - Dataset: Kaggle - Malicious and Benign QR Codes by Samah Sadiq (200,000 QR codes)
-- VirusTotal - Antivirus API
-- URLhaus (abuse.ch) - Malicious URL database
-- Streamlit Community Cloud - Free hosting
+- VirusTotal: Antivirus API (70+ engines)
+- URLhaus (abuse.ch): Malicious URL database
+- Streamlit Community Cloud: Free hosting
 
 ## Contact
 
-GitHub: https://github.com/hssoooni
+- GitHub: https://github.com/hssoooni
+- Live App: https://amanqr-3bjyry2nfnxf5d2rbrezdy.streamlit.app
 
 ---
 
 Made with love for the community
+
+AmanQR - حماية المجتمع من هجمات QR
