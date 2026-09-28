@@ -163,6 +163,18 @@ def classify_threat(url, analysis_result):
     if any(kw in url_lower for kw in ['free', 'winner', 'prize', 'lottery', 'gift']):
         scam_indicators.append("Scam keywords")
     
+    # Free hosting abuse
+    free_hosting = ['blogspot.com', 'wordpress.com', 'weebly.com', 
+                    'wixsite.com', '000webhostapp.com', 'ukit.me',
+                    'github.io', 'netlify.app', 'vercel.app']
+    if any(fh in domain for fh in free_hosting):
+        scam_indicators.append(f"Hosted on {domain.split('.')[1] if len(domain.split('.')) > 1 else 'free service'}")
+    
+    # Random path (common in abuse)
+    if re.search(r'/[a-z0-9]{7,}', path) and not any(kw in path for kw in 
+        ['about', 'contact', 'product', 'service', 'blog', 'news', 'home', 'post']):
+        scam_indicators.append("Random path")
+    
     if len(scam_indicators) >= 1 and url_score >= 30:
         threat['attack_type'] = 'SCAM'
         threat['attack_type_ar'] = 'احتيال'
