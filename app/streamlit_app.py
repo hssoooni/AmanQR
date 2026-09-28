@@ -222,6 +222,39 @@ if image_source is not None:
         if result.get('api_vt', 0) > 0 or result.get('api_uh', 0) > 0:
             st.caption(f"🔍 VirusTotal: {result.get('api_vt', 0):.0f}/100 | URLhaus: {result.get('api_uh', 0):.0f}/100")
         
+        # Threat classification display
+        threat = result.get('threat_info', {})
+        if threat and threat.get('attack_type') not in ('NO_THREAT', 'UNKNOWN', None):
+            st.markdown("---")
+            st.markdown("### 🚨 Attack Classification / تصنيف الهجوم")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"#### {threat.get('icon', '❓')} {threat.get('attack_type', 'UNKNOWN')}")
+                st.markdown(f"**{threat.get('attack_type_ar', '')}**")
+            
+            with col2:
+                severity = threat.get('severity', 'N/A')
+                severity_ar = threat.get('severity_ar', '')
+                if severity == 'CRITICAL':
+                    st.error(f"**Severity: {severity}**\n\n{severity_ar}")
+                elif severity == 'HIGH':
+                    st.warning(f"**Severity: {severity}**\n\n{severity_ar}")
+                elif severity == 'MEDIUM':
+                    st.info(f"**Severity: {severity}**\n\n{severity_ar}")
+                else:
+                    st.success(f"**Severity: {severity}**\n\n{severity_ar}")
+            
+            if threat.get('explanation'):
+                st.markdown("**📖 Explanation / التفسير:**")
+                st.markdown(f"*{threat.get('explanation', '')}*")
+                st.markdown(f"*{threat.get('explanation_ar', '')}*")
+            
+            if threat.get('indicators'):
+                st.markdown("**🎯 Attack Indicators / مؤشرات الهجوم:**")
+                for ind in threat['indicators']:
+                    st.markdown(f"- {ind}")
+        
         st.markdown("### 📋 Detection Reasons")
         st.markdown("*الأسباب / Reasons:*")
         
