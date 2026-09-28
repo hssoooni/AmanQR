@@ -327,6 +327,29 @@ KNOWN_MALICIOUS_DOMAINS = {
 }
 
 
+
+
+# ============================================================
+# FreeDNS services (often abused for malware C2)
+# ============================================================
+FREEDNS_DOMAINS = {
+    '.work.gd', '.ddns.net', '.no-ip.org', '.hopto.org',
+    '.zapto.org', '.sytes.net', '.webhop.me', '.myftp.org',
+    '.servebeer.com', '.serveftp.com', '.dynu.com', '.dynns.com',
+    '.myvnc.com', '.ignorelist.com', '.chickenkiller.com',
+    '.jumpingcrab.com', '.crabdance.com', '.strangled.net',
+    '.mooo.com', '.3utilities.com', '.bounceme.net',
+    '.ddnsguru.com', '.dnset.com', '.dyn-o-saur.com',
+}
+
+# IoT malware architectures (binaries for IoT devices)
+IOT_ARCHITECTURES = [
+    'mipsel', 'mips', 'arm7', 'arm', 'x86', 'i386', 'i586',
+    'sparc', 'ppc', 'powerpc', 'sh4', 'm68k', 'arc',
+    'aarch64', 'armv7', 'armv6', 'x86_64',
+]
+
+
 def analyze_url(url):
     if not url:
         return 0, ["No URL"]
