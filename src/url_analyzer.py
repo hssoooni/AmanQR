@@ -193,6 +193,30 @@ def has_brand_in_path(domain, path):
     return False, None
 
 
+
+# ============================================================
+# GitHub / Blogspot / Free hosting abuse patterns
+# ============================================================
+ABUSE_HOSTING = {
+    'github.com': {
+        'paths': ['/releases/', '/downloads/', '/download/', '/raw/', '/blob/'],
+        'files': ['.exe', '.apk', '.msi', '.dmg', '.zip', '.rar', '.sh', '.bin', '.jar'],
+    },
+    'raw.githubusercontent.com': {
+        'paths': ['/'],
+        'files': ['.exe', '.apk', '.msi', '.dmg', '.sh', '.bin', '.jar'],
+    },
+    'gitlab.com': {
+        'paths': ['/releases/', '/downloads/', '/raw/'],
+        'files': ['.exe', '.apk', '.msi', '.sh', '.bin'],
+    },
+    'blogspot.com': {
+        'paths': ['/p/', '/page/'],
+        'files': [],
+    },
+}
+
+
 def analyze_url(url):
     if not url:
         return 0, ["No URL"]

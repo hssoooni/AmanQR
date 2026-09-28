@@ -219,9 +219,10 @@ def decide(url):
     # COMBINE (priority order)
     # ============================================================
     
-    # Priority 1: External API says malicious
+    # Priority 1: External API says malicious — OVERRIDE EVERYTHING
+    # Even if domain is trusted (GitHub, Blogspot, etc.)
     if api_score >= 50:
-        final_score = min(95, 60 + api_score * 0.3)
+        final_score = min(95, 70 + api_score * 0.25)
     
     # Priority 2: Clear attack indicators
     elif attack_score >= 60:
