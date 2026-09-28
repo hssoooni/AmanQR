@@ -58,9 +58,15 @@ SUSPICIOUS_PATH_KEYWORDS = [
 
 
 SUSPICIOUS_TLDS = {
-    ".tk", ".ml", ".ga", ".cf", ".gq", ".xyz", ".top", ".work", ".click",
-    ".country", ".stream", ".download", ".review", ".loan", ".date",
-    ".online", ".site", ".website", ".space", ".store", ".fun",
+    # Free/high-risk TLDs
+    '.tk', '.ml', '.ga', '.cf', '.gq', '.xyz', '.top',
+    '.work', '.click', '.country', '.stream', '.download',
+    '.review', '.loan', '.date', '.gdn', '.men', '.racing',
+    # Blog/personal platforms (often abused)
+    '.blog', '.site', '.online', '.website', '.space',
+    '.store', '.fun', '.live', '.icu', '.rest',
+    '.cyou', '.monster', '.quest', '.bar', '.bond',
+    '.link', '.email', '.photos',
 }
 
 FREE_HOSTING = {
