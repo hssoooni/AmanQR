@@ -14,6 +14,7 @@ from src.url_analyzer import (
 from src.whois_checker import whois_check
 from src.api_checker import check_external_apis
 from src.url_unshortener import analyze_with_unshortening, is_shortener
+from src.threat_classifier import classify_threat
 
 
 MODEL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -292,10 +293,16 @@ def decide(url):
     if not all_reasons:
         all_reasons = ["No suspicious indicators"]
     
+    # ============================================================
+    # Classify threat type
+    # ============================================================
+    threat_info = classify_threat(actual_url, {"url_score": url_score})
+    
     return {
         "verdict": verdict, "score": final_score,
         "confidence": confidence, "reasons": all_reasons,
         "emoji": emoji, "color": color, "url": url_clean,
+        "threat_info": threat_info,
         "ml_proba": ml_proba, "ml_used": ml_used,
         "url_score": url_score, "whois_score": whois_score,
         "attack_score": attack_score,
