@@ -72,6 +72,44 @@ def classify_threat(url, analysis_result):
     # 1. MALWARE DISTRIBUTION
     # ============================================================
     malware_indicators = []
+    
+    # ============================================================
+    # PRIORITY 1: IoT malware binaries (Mirai, etc.)
+    # ============================================================
+    iot_archs = ['mipsel', 'mips', 'arm7', 'arm', 'x86', 'i386',
+                 'sparc', 'ppc', 'sh4', 'm68k', 'aarch64', 'armv7',
+                 'i686', 'armv6l', 'armv5l', 'mips64', 'sparc64']
+    for arch in iot_archs:
+        if path.endswith(f'/{arch}') or path == f'/{arch}' or f'/{arch}/' in path:
+            threat['attack_type'] = 'MALWARE'
+            threat['attack_type_ar'] = 'برمجية خبيثة (IoT)'
+            threat['severity'] = 'CRITICAL'
+            threat['severity_ar'] = 'حرج'
+            threat['icon'] = '🦠'
+            threat['color'] = 'red'
+            threat['indicators'] = [f'IoT malware binary: /{arch}']
+            threat['explanation'] = f'URL serves malware binary for IoT devices ({arch} architecture) - typical of Mirai botnet'
+            threat['explanation_ar'] = f'الرابط يوزّع برمجية خبيثة لأجهزة IoT ({arch}) - نمط Mirai الشهير'
+            return threat
+    
+    # ============================================================
+    # PRIORITY 2: Known malicious domains
+    # ============================================================
+    known_malicious = ['trust-soft.cc', 'rabbids.cc', 'polysupport.team', 
+                       'downf468.com', 'moziloader.com']
+    for km in known_malicious:
+        if km in domain:
+            threat['attack_type'] = 'MALWARE'
+            threat['attack_type_ar'] = 'برمجية خبيثة'
+            threat['severity'] = 'CRITICAL'
+            threat['severity_ar'] = 'حرج'
+            threat['icon'] = '🦠'
+            threat['color'] = 'red'
+            threat['indicators'] = [f'Known malware domain: {km}']
+            threat['explanation'] = 'Domain is listed in threat intelligence feeds'
+            threat['explanation_ar'] = 'الدومين مُدرج في قوائم التهديدات المعروفة'
+            return threat
+    
     malware_extensions = [
         '.exe', '.dll', '.apk', '.msi', '.bat', '.sh', '.bin', 
         '.scr', '.vbs', '.jar', '.ps1', '.cmd', '.hta', '.wsf',
