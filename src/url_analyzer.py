@@ -1,5 +1,8 @@
 import numpy as np
 
+# Global for abuse score
+LAST_ABUSE_SCORE = 0
+
 """
 AmanQR - URL Analyzer Module (v4)
 Rule-based detection of malicious URLs in QR codes.
@@ -427,6 +430,11 @@ def analyze_url(url):
     if abuse_score > 0:
         score += abuse_score
         reasons.extend(abuse_reasons)
+        # Store abuse score globally for decision_engine
+        global LAST_ABUSE_SCORE
+        LAST_ABUSE_SCORE = abuse_score
+    else:
+        LAST_ABUSE_SCORE = 0
     
     return score, reasons
 

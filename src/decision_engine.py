@@ -8,6 +8,7 @@ import numpy as np
 from urllib.parse import urlparse
 
 from src.url_analyzer import (
+    LAST_ABUSE_SCORE,
     analyze_url, clean_url, extract_features_for_ml,
     TRUSTED_TLD_SUFFIXES,
 )
@@ -219,9 +220,13 @@ def decide(url):
     # COMBINE (priority order)
     # ============================================================
     
-    # Priority 1: External API says malicious — OVERRIDE EVERYTHING
-    # Even if domain is trusted (GitHub, Blogspot, etc.)
-    if api_score >= 50:
+    # Priority 0: HOSTING ABUSE (GitHub /releases/, .exe on raw, etc.)
+    # This OVERRIDES everything — even trusted domains
+    if LAST_ABUSE_SCORE >= 35:
+        final_score = min(90, 65 + LAST_ABUSE_SCORE * 0.4)
+    
+    # Priority 1: External API says malicious
+    elif api_score >= 50:
         final_score = min(95, 70 + api_score * 0.25)
     
     # Priority 2: Clear attack indicators
