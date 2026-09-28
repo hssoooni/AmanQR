@@ -95,7 +95,17 @@ def classify_threat(url, analysis_result):
         except:
             pass
     
-    if len(malware_indicators) >= 2:
+    # Strong malware indicators trigger MALWARE alone
+    strong_malware_keywords = [
+        'IoT malware', 'Known malware domain', 'Dangerous file',
+        'Executable file', 'Binary file', 'Suspicious path on github'
+    ]
+    has_strong_indicator = any(
+        any(kw in ind for kw in strong_malware_keywords) 
+        for ind in malware_indicators
+    )
+    
+    if len(malware_indicators) >= 2 or has_strong_indicator:
         threat['attack_type'] = 'MALWARE'
         threat['attack_type_ar'] = 'برمجية خبيثة'
         threat['severity'] = 'CRITICAL'
