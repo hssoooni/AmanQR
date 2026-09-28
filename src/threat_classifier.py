@@ -1,5 +1,5 @@
 """
-AmanQR - Threat Classifier
+AmanQR - Threat Classifier v2
 Identifies attack type, severity, and provides explanation.
 """
 import re
@@ -7,10 +7,7 @@ from urllib.parse import urlparse
 
 
 def classify_threat(url, analysis_result):
-    """
-    Classify the threat type and severity.
-    Returns: dict with attack_type, severity, indicators, explanation
-    """
+    """Classify threat type with better sensitivity."""
     if not url:
         return None
     
@@ -23,6 +20,8 @@ def classify_threat(url, analysis_result):
         query = parsed.query.lower()
     except:
         domain, path, query = "", "", ""
+    
+    url_score = analysis_result.get('url_score', 0)
     
     threat = {
         'attack_type': 'UNKNOWN',
@@ -42,23 +41,17 @@ def classify_threat(url, analysis_result):
     malware_indicators = []
     malware_extensions = ['.exe', '.dll', '.apk', '.msi', '.bat', 
                           '.sh', '.bin', '.scr', '.vbs', '.jar']
-    malware_keywords = ['download', 'setup', 'install', 'update', 
-                        'payload', 'dropper', 'malware']
     
-    # Direct file download
     if any(path.endswith(ext) for ext in malware_extensions):
         malware_indicators.append(f"Direct file download ({path.split('.')[-1]})")
     
-    # Binary file indicators
-    if '/bin/' in path or path.endswith('/bin.sh') or 'download' in path:
+    if '/bin/' in path or path.endswith('/bin.sh'):
         malware_indicators.append("Binary file path detected")
     
-    # IP + port (common C2)
     if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', domain):
         malware_indicators.append("Direct IP (no domain)")
     
-    # Suspicious port
-    if ':' in domain:
+    if ':' in domain and not domain.endswith(':443') and not domain.endswith(':80'):
         try:
             port = int(domain.split(':')[1])
             if port not in [80, 443, 8080]:
@@ -74,7 +67,7 @@ def classify_threat(url, analysis_result):
         threat['icon'] = '🦠'
         threat['color'] = 'red'
         threat['indicators'] = malware_indicators
-        threat['explanation'] = 'URL distributes malware or connects to command-and-control server'
+        threat['explanation'] = 'URL distributes malware or connects to C2 server'
         threat['explanation_ar'] = 'الرابط يوزّع برمجيات خبيثة أو يتصل بسيرفر تحكم'
         return threat
     
@@ -92,19 +85,16 @@ def classify_threat(url, analysis_result):
                         'security', 'confirm', 'password', 'wallet',
                         'authenticate', 'recovery', 'unlock', 'suspended']
     
-    # Brand impersonation
     domain_base = domain.split('.')[0] if domain else ''
     for brand in brands:
         if brand in path.lower() and brand not in domain_base:
             phishing_indicators.append(f"Brand '{brand}' in URL path")
             break
-        # Typosquatting
-        domain_clean = domain_base.replace('0','o').replace('1','l').replace('3','e').replace('5','s')
+        domain_clean = domain_base.replace('0','o').replace('1','l').replace('3','e')
         if brand in domain_clean and brand != domain_base and brand not in domain_base:
             phishing_indicators.append(f"Typosquatting of '{brand}'")
             break
     
-    # Phishing keywords
     found_keywords = [kw for kw in phishing_keywords if kw in url_lower]
     if found_keywords:
         phishing_indicators.append(f"Phishing keywords: {', '.join(found_keywords[:3])}")
@@ -117,18 +107,24 @@ def classify_threat(url, analysis_result):
         threat['icon'] = '🎣'
         threat['color'] = 'red'
         threat['indicators'] = phishing_indicators
-        threat['explanation'] = 'URL attempts to steal credentials via fake login page'
+        threat['explanation'] = 'URL attempts to steal credentials via fake page'
         threat['explanation_ar'] = 'الرابط يحاول سرقة بيانات الدخول عبر صفحة مزيّفة'
         return threat
     
     # ============================================================
-    # 3. HACKED SITE ABUSE
+    # 3. HACKED SITE ABUSE (MORE SENSITIVE)
     # ============================================================
     hacked_indicators = []
     
     # Random long path (typical of hacked sites)
     if re.search(r'/[a-z0-9]{15,}', path):
-        hacked_indicators.append("Random-looking path (hacked site pattern)")
+        hacked_indicators.append("Random-looking path")
+    
+    # Random short path (like /x487kjf...)
+    if re.search(r'/[a-z0-9]{8,}', path) and not any(kw in path for kw in 
+        ['about', 'contact', 'product', 'service', 'blog', 'news', 'home']):
+        if '/x' in path or re.search(r'/[a-z]\d{3,}', path):
+            hacked_indicators.append("Suspicious path pattern")
     
     # Suspicious file paths
     suspicious_paths = ['/admin.php', '/wp-admin', '/phpmyadmin', 
@@ -141,9 +137,10 @@ def classify_threat(url, analysis_result):
     
     # Deep subdirectory
     if path.count('/') >= 4:
-        hacked_indicators.append("Deep subdirectory (abuse pattern)")
+        hacked_indicators.append("Deep subdirectory")
     
-    if len(hacked_indicators) >= 2:
+    # If 1 indicator + score >= 30 → hacked
+    if len(hacked_indicators) >= 1 and url_score >= 25:
         threat['attack_type'] = 'HACKED_SITE'
         threat['attack_type_ar'] = 'موقع مخترق'
         threat['severity'] = 'HIGH'
@@ -164,12 +161,9 @@ def classify_threat(url, analysis_result):
         scam_indicators.append(f"Free TLD ({domain.split('.')[-1]})")
     
     if any(kw in url_lower for kw in ['free', 'winner', 'prize', 'lottery', 'gift']):
-        scam_indicators.append("Scam keywords (free/prize)")
+        scam_indicators.append("Scam keywords")
     
-    if re.match(r'^\d{1,3}\.\d{1,3}', domain):
-        scam_indicators.append("Direct IP (no domain)")
-    
-    if len(scam_indicators) >= 2:
+    if len(scam_indicators) >= 1 and url_score >= 30:
         threat['attack_type'] = 'SCAM'
         threat['attack_type_ar'] = 'احتيال'
         threat['severity'] = 'HIGH'
@@ -198,12 +192,12 @@ def classify_threat(url, analysis_result):
             pass
     
     if not url_lower.startswith('https://'):
-        infra_indicators.append("No HTTPS encryption")
+        infra_indicators.append("No HTTPS")
     
     if domain.count('.') > 2:
         infra_indicators.append("Multiple subdomains")
     
-    if len(infra_indicators) >= 3:
+    if len(infra_indicators) >= 2:
         threat['attack_type'] = 'SUSPICIOUS_INFRA'
         threat['attack_type_ar'] = 'بنية مشبوهة'
         threat['severity'] = 'MEDIUM'
@@ -211,8 +205,8 @@ def classify_threat(url, analysis_result):
         threat['icon'] = '⚠️'
         threat['color'] = 'yellow'
         threat['indicators'] = infra_indicators
-        threat['explanation'] = 'URL uses suspicious infrastructure (IP, unusual port)'
-        threat['explanation_ar'] = 'الرابط يستخدم بنية تحتية مشبوهة (IP، بورت غريب)'
+        threat['explanation'] = 'URL uses suspicious infrastructure'
+        threat['explanation_ar'] = 'الرابط يستخدم بنية تحتية مشبوهة'
         return threat
     
     # ============================================================
