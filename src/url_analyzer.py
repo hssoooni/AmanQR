@@ -217,6 +217,79 @@ ABUSE_HOSTING = {
 }
 
 
+
+
+# ============================================================
+# Hosting Abuse Detection (GitHub, GitLab, Blogspot, etc.)
+# ============================================================
+def check_hosting_abuse(domain, path):
+    """
+    Check if trusted hosting service is being abused.
+    Returns: (score, reasons)
+    """
+    score = 0
+    reasons = []
+    path_lower = path.lower()
+    domain_lower = domain.lower()
+    
+    # Known hosting services and their abuse patterns
+    ABUSE_PATTERNS = {
+        'github.com': {
+            'suspicious_paths': ['/releases/', '/downloads/', '/releases/download/', '/raw/'],
+            'file_extensions': ['.exe', '.apk', '.msi', '.dmg', '.sh', '.bin', '.jar', '.scr', '.vbs'],
+            'suspicious_keywords': ['malware', 'virus', 'trojan', 'crack', 'hack', 'cheat', 'keygen'],
+        },
+        'raw.githubusercontent.com': {
+            'suspicious_paths': ['/'],
+            'file_extensions': ['.exe', '.apk', '.msi', '.sh', '.bin', '.jar'],
+            'suspicious_keywords': [],
+        },
+        'gitlab.com': {
+            'suspicious_paths': ['/releases/', '/downloads/', '/raw/'],
+            'file_extensions': ['.exe', '.apk', '.sh', '.bin'],
+            'suspicious_keywords': [],
+        },
+        'bitbucket.org': {
+            'suspicious_paths': ['/downloads/', '/raw/'],
+            'file_extensions': ['.exe', '.apk', '.sh', '.bin'],
+            'suspicious_keywords': [],
+        },
+        'blogspot.com': {
+            'suspicious_paths': [],
+            'file_extensions': [],
+            'suspicious_keywords': ['free-download', 'crack', 'keygen', 'hack'],
+        },
+    }
+    
+    # Check each hosting service
+    for host, patterns in ABUSE_PATTERNS.items():
+        if host in domain_lower:
+            # 1. Check suspicious paths
+            for sus_path in patterns['suspicious_paths']:
+                if sus_path in path_lower:
+                    score += 35
+                    reasons.append(f"🚨 Suspicious path on {host}: {sus_path}")
+                    break
+            
+            # 2. Check for executable file extensions
+            for ext in patterns['file_extensions']:
+                if ext in path_lower:
+                    score += 40
+                    reasons.append(f"🚨 Executable file on {host}: {ext}")
+                    break
+            
+            # 3. Check suspicious keywords in path
+            for kw in patterns['suspicious_keywords']:
+                if kw in path_lower:
+                    score += 30
+                    reasons.append(f"🚨 Suspicious keyword on {host}: {kw}")
+                    break
+            
+            break
+    
+    return score, reasons
+
+
 def analyze_url(url):
     if not url:
         return 0, ["No URL"]
@@ -348,6 +421,12 @@ def analyze_url(url):
     score = max(0, min(100, score))
     if not reasons:
         reasons = ["No suspicious indicators"]
+    
+        # ---- HOSTING ABUSE CHECK (NEW) ----
+    abuse_score, abuse_reasons = check_hosting_abuse(domain, path)
+    if abuse_score > 0:
+        score += abuse_score
+        reasons.extend(abuse_reasons)
     
     return score, reasons
 
