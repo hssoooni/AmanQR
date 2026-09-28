@@ -302,7 +302,33 @@ def decide(url):
     # ============================================================
     # Classify threat type
     # ============================================================
-    threat_info = classify_threat(actual_url, {"url_score": url_score})
+    # Pass verdict + score to classifier for consistency
+    threat_info = classify_threat(
+        actual_url, 
+        {
+            "url_score": url_score,
+            "final_verdict": verdict,
+            "final_score": final_score,
+        }
+    )
+    
+    # ============================================================
+    # CONSISTENCY CHECK: Align classification with verdict
+    # ============================================================
+    if verdict == "LIKELY SAFE":
+        # Safe = NO_THREAT (unless strong malware detected)
+        if threat_info.get('attack_type') not in ['MALWARE', 'PHISHING']:
+            threat_info = {
+                'attack_type': 'NO_THREAT',
+                'attack_type_ar': 'لا يوجد تهديد',
+                'severity': 'SAFE',
+                'severity_ar': 'آمن',
+                'indicators': [],
+                'explanation': 'No attack patterns detected',
+                'explanation_ar': 'لم يتم اكتشاف أنماط هجوم',
+                'icon': '✅',
+                'color': 'green',
+            }
     
     return {
         "verdict": verdict, "score": final_score,

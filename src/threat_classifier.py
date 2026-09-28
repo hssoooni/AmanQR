@@ -69,6 +69,18 @@ def classify_threat(url, analysis_result):
     }
     
     # ============================================================
+    # VERDICT-BASED CLASSIFICATION
+    # ============================================================
+    final_verdict = analysis_result.get('final_verdict', '')
+    final_score = analysis_result.get('final_score', 0)
+    
+    # If verdict is SAFE, but we detect minor issues, downgrade to NO_THREAT
+    if final_verdict == 'LIKELY SAFE' and final_score <= 15:
+        # Very clean - override weak indicators
+        # (Keep strong malware detection though)
+        pass  # Let normal flow continue — decision_engine will override if needed
+    
+    # ============================================================
     # 0. SCRIPT FILES = MALWARE (highest priority)
     # ============================================================
     dangerous_scripts = ['.sh', '.ps1', '.bat', '.cmd', '.vbs', '.hta', 
