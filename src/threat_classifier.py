@@ -39,8 +39,11 @@ def classify_threat(url, analysis_result):
     # 1. MALWARE DISTRIBUTION
     # ============================================================
     malware_indicators = []
-    malware_extensions = ['.exe', '.dll', '.apk', '.msi', '.bat', 
-                          '.sh', '.bin', '.scr', '.vbs', '.jar']
+    malware_extensions = [
+        '.exe', '.dll', '.apk', '.msi', '.bat', '.sh', '.bin', 
+        '.scr', '.vbs', '.jar', '.ps1', '.cmd', '.hta', '.wsf',
+        '.pif', '.com', '.run', '.dmg', '.app', '.deb', '.rpm',
+    ]
     
     if any(path.endswith(ext) for ext in malware_extensions):
         malware_indicators.append(f"Direct file download ({path.split('.')[-1]})")

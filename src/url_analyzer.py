@@ -44,11 +44,27 @@ ACTION_KEYWORDS = [
 
 # NEW: Suspicious file patterns (hacked sites)
 SUSPICIOUS_FILE_PATTERNS = [
+    # Web shell / admin panels
     "admin.php", "wp-admin", "wp-login", "phpmyadmin",
     "shell.php", "c99.php", "r57.php", "backdoor",
     ".env", ".git", "config.php", "wp-config",
     "upload.php", "filemanager", "webshell",
     "xmlrpc.php", "setup.php", "install.php",
+    # Dangerous script files (NEW)
+    ".ps1",       # PowerShell
+    ".bat",       # Batch
+    ".cmd",       # Command
+    ".vbs",       # VBScript
+    ".js",        # JavaScript (when executed)
+    ".hta",       # HTML Application
+    ".wsf",       # Windows Script
+    ".scr",       # Screensaver (often malware)
+    ".pif",       # Program Information File
+    ".msi",       # MS Installer
+    ".dll",       # Dynamic Link Library
+    ".jar",       # Java Archive
+    # Executables
+    ".exe", ".apk", ".dmg", ".app", ".deb", ".rpm",
 ]
 
 # NEW: Suspicious path keywords
@@ -406,6 +422,17 @@ def analyze_url(url):
     if domain_base in ['test', 'demo', 'dev', 'tmp', 'temp']:
         score += 15
         reasons.append(f"Suspicious subdomain: {domain_base}")
+    
+    # 16.5 DANGEROUS EXTENSIONS CHECK
+    dangerous_exts = ['.ps1', '.bat', '.cmd', '.vbs', '.hta', '.wsf',
+                      '.exe', '.apk', '.msi', '.dll', '.jar', '.scr', 
+                      '.pif', '.dmg', '.app', '.deb', '.rpm', '.bin',
+                      '.sh', '.run', '.com']
+    for ext in dangerous_exts:
+        if path.endswith(ext) or f'{ext}?' in url_lower or f'{ext}#' in url_lower:
+            score += 50
+            reasons.append(f"🚨 Dangerous file: {ext}")
+            break
     
     # 17. NEW: Suspicious file pattern (hacked sites)
     for pattern in SUSPICIOUS_FILE_PATTERNS:
