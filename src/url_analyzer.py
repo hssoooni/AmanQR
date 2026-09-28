@@ -64,10 +64,8 @@ SUSPICIOUS_TLDS = {
 }
 
 FREE_HOSTING = {
-    "000webhostapp.com", "ukit.me", "weebly.com", "wixsite.com",
-    "blogspot.com", "wordpress.com", "github.io", "netlify.app",
-    "vercel.app", "herokuapp.com", "firebaseapp.com", "web.app",
-    "glitch.me", "repl.co", "r2.dev",
+    'blogger.com', 'pastebin.com', 'medium.com', 
+    'tumblr.com'
 }
 
 SHORTENERS = {

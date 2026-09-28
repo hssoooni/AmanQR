@@ -164,9 +164,13 @@ def classify_threat(url, analysis_result):
         scam_indicators.append("Scam keywords")
     
     # Free hosting abuse
-    free_hosting = ['blogspot.com', 'wordpress.com', 'weebly.com', 
-                    'wixsite.com', '000webhostapp.com', 'ukit.me',
-                    'github.io', 'netlify.app', 'vercel.app']
+    free_hosting = [
+        'blogspot.com', 'blogger.com', 'wordpress.com', 'weebly.com', 
+        'wixsite.com', '000webhostapp.com', 'ukit.me',
+        'github.io', 'netlify.app', 'vercel.app',
+        'pastebin.com', 'medium.com', 'tumblr.com',
+        'ghost.io', 'hashnode.dev', 'dev.to',
+    ]
     if any(fh in domain for fh in free_hosting):
         scam_indicators.append(f"Hosted on {domain.split('.')[1] if len(domain.split('.')) > 1 else 'free service'}")
     
