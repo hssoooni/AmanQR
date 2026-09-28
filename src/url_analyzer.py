@@ -64,8 +64,24 @@ SUSPICIOUS_TLDS = {
 }
 
 FREE_HOSTING = {
-    'blogger.com', 'pastebin.com', 'medium.com', 
-    'tumblr.com'
+    # Free website hosting
+    '000webhostapp.com', 'ukit.me', 'weebly.com', 'wixsite.com',
+    'blogspot.com', 'wordpress.com', 'github.io', 'netlify.app',
+    'vercel.app', 'herokuapp.com', 'firebaseapp.com', 'web.app',
+    'glitch.me', 'repl.co', 'r2.dev',
+    # Blog platforms
+    'blogger.com', 'tumblr.com', 'medium.com', 'substack.com',
+    'ghost.io', 'hashnode.dev', 'dev.to',
+    # Website builders
+    'godaddysites.com', 'site123.me', 'jimdofree.com',
+    'webflow.io', 'carrd.co', 'notion.site',
+    # Paste/file sharing (often abused)
+    'pastebin.com', 'ghostbin.com', 'hastebin.com',
+    'paste.ee', 'controlc.com',
+    # Cloud storage
+    'drive.google.com', 'dropbox.com', 'mega.nz',
+    'mediafire.com', '4shared.com', 'anonfiles.com',
+    'gofile.io',
 }
 
 SHORTENERS = {

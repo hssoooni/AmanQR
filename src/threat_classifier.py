@@ -165,7 +165,7 @@ def classify_threat(url, analysis_result):
     
     # Free hosting abuse
     free_hosting = [
-        'blogspot.com', 'blogger.com', 'wordpress.com', 'weebly.com', 
+        'blogspot.com', 'blogger.com', 'wordpress.com', 'weebly.com',
         'wixsite.com', '000webhostapp.com', 'ukit.me',
         'github.io', 'netlify.app', 'vercel.app',
         'pastebin.com', 'medium.com', 'tumblr.com',
