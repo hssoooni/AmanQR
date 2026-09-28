@@ -13,6 +13,39 @@ def classify_threat(url, analysis_result):
     
     url_lower = url.lower()
     
+    # ============================================================
+    # KNOWN MALICIOUS DOMAINS (highest priority)
+    # ============================================================
+    KNOWN_MALICIOUS_DOMAINS = {
+        'trust-soft.cc',
+        'rabbids.cc',
+        'polysupport.team',
+        'downf468.com',
+        'moziloader.com',
+    }
+    
+    domain_check = ''
+    try:
+        from urllib.parse import urlparse as _urlparse
+        _parsed = _urlparse(url_lower if '://' in url_lower else 'http://' + url_lower)
+        domain_check = _parsed.netloc.lower()
+    except Exception:
+        pass
+    
+    for mal in KNOWN_MALICIOUS_DOMAINS:
+        if mal in domain_check:
+            return {
+                'attack_type': 'MALWARE',
+                'attack_type_ar': 'برمجية خبيثة',
+                'severity': 'CRITICAL',
+                'severity_ar': 'حرج',
+                'indicators': [f'Known malware domain: {mal}'],
+                'explanation': 'Domain is listed in threat intelligence feeds',
+                'explanation_ar': 'الدومين مُدرج في قوائم التهديدات المعروفة',
+                'icon': '🦠',
+                'color': 'red',
+            }
+    
     try:
         parsed = urlparse(url_lower if '://' in url_lower else 'http://' + url_lower)
         domain = parsed.netloc.lower()
