@@ -6,7 +6,7 @@ AmanQR is a free, open-source tool that analyzes QR codes and detects malicious 
 
 ## Try it Live
 
-Link: https://amanqr-3bjry2nfnxf5d2rbreezy.streamlit.app
+Link: https://amanqr-3bjyry2nfnxf5d2rbrezdy.streamlit.app
 
 No installation needed. Just upload a QR image.
 

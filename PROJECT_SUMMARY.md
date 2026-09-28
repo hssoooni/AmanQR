@@ -60,7 +60,7 @@ AmanQR analyzes QR codes in 3 seconds and provides:
 
 ## Links
 
-- Live App: https://amanqr-3bjry2nfnxf5d2rbreezy.streamlit.app
+- Live App: https://amanqr-3bjyry2nfnxf5d2rbrezdy.streamlit.app
 - GitHub: https://github.com/hssoooni/AmanQR
 
 ## License
