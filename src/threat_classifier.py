@@ -267,35 +267,76 @@ def classify_threat(url, analysis_result):
         return threat
     
     # ============================================================
-    # 3. HACKED SITE ABUSE (MORE SENSITIVE)
+    # 3. HACKED SITE ABUSE (SMART - with context)
     # ============================================================
     hacked_indicators = []
     
-    # Random long path (typical of hacked sites)
-    if re.search(r'/[a-z0-9]{15,}', path):
-        hacked_indicators.append("Random-looking path")
+    # Known trusted TLDs (gov, edu, major brands)
+    trusted_tlds = ['.gov', '.edu', '.gov.sa', '.edu.sa', '.mil']
+    is_trusted_tld = any(domain.endswith(t) for t in trusted_tlds)
     
-    # Random short path (like /x487kjf...)
-    if re.search(r'/[a-z0-9]{8,}', path) and not any(kw in path for kw in 
-        ['about', 'contact', 'product', 'service', 'blog', 'news', 'home']):
-        if '/x' in path or re.search(r'/[a-z]\d{3,}', path):
-            hacked_indicators.append("Suspicious path pattern")
+    # Known safe paths (normal for legitimate sites)
+    safe_paths = [
+        '/about', '/contact', '/products', '/product', '/services',
+        '/blog', '/news', '/home', '/post', '/article', '/page',
+        '/category', '/tag', '/search', '/user', '/profile',
+        '/api/', '/v1/', '/v2/', '/assets/', '/static/', '/images/',
+        '/css/', '/js/', '/fonts/', '/downloads/',  # normal for many sites
+        '/forms/', '/d/', '/file/', '/view',      # Google-style
+        '/watch', '/playlist', '/channel',          # YouTube
+        '/wiki/', '/item/', '/category/',           # Wikipedia
+    ]
     
-    # Suspicious file paths
-    suspicious_paths = ['/admin.php', '/wp-admin', '/phpmyadmin', 
-                        '/.env', '/.git', '/backup', '/shell.php',
-                        '/c99.php', '/r57.php', '/upload.php']
-    for sp in suspicious_paths:
-        if sp in path:
-            hacked_indicators.append(f"Exposed file: {sp}")
+    is_safe_path = any(sp in path for sp in safe_paths)
+    
+    # Real hacked site indicators (VERY specific)
+    real_hacked_patterns = [
+        r'/x\d{3,}[a-z]{5,}',          # /x487kjfdsd9274r98y
+        r'/[a-z]{2}\d{5,}[a-z]{5,}',     # /ab12345abcdef
+        r'/[a-z0-9]{20,}\.(php|html)',   # /random20chars.php
+        r'/\.env',                       # /.env file
+        r'/\.git',                       # /.git exposed
+        r'/(backdoor|shell|c99|r57)\.php',
+        r'/(admin|wp-admin|phpmyadmin)/?$',  # Admin panels
+        r'/wp-content/uploads/.*\.php$',    # PHP in uploads (hack indicator)
+    ]
+    
+    # Check for real hacked patterns
+    for pattern in real_hacked_patterns:
+        if re.search(pattern, path, re.IGNORECASE):
+            hacked_indicators.append(f"Hacked pattern: {pattern[:30]}")
             break
     
-    # Deep subdirectory
-    if path.count('/') >= 4:
-        hacked_indicators.append("Deep subdirectory")
+    # Suspicious file paths (strong indicators)
+    suspicious_files = ['/shell.php', '/c99.php', '/r57.php', 
+                        '/backdoor.php', '/xmlrpc.php',
+                        '/wp-config.php', '/.env', '/.git/config']
+    for sf in suspicious_files:
+        if sf in path:
+            hacked_indicators.append(f"Exposed sensitive file: {sf}")
+            break
     
-    # If 1 indicator + score >= 30 → hacked
-    if len(hacked_indicators) >= 1 and url_score >= 25:
+    # Deep random subdirectory (only if NOT safe path AND NOT trusted TLD)
+    if (path.count('/') >= 4 and 
+        not is_safe_path and 
+        not is_trusted_tld):
+        # Check for random-looking directory
+        parts = [p for p in path.split('/') if p]
+        random_parts = sum(1 for p in parts 
+                          if len(p) >= 8 and not any(c in 'aeiou' for c in p[:5]))
+        if random_parts >= 2:
+            hacked_indicators.append("Multiple random directories")
+    
+    # Strong condition: 
+    # - 1 strong indicator (hacked pattern), OR
+    # - 2+ weak indicators + not safe path + not trusted TLD
+    is_real_hacked = (
+        any('Hacked pattern' in ind or 'Exposed sensitive' in ind 
+            for ind in hacked_indicators) or
+        (len(hacked_indicators) >= 2 and not is_safe_path and not is_trusted_tld)
+    )
+    
+    if is_real_hacked and url_score >= 25:
         threat['attack_type'] = 'HACKED_SITE'
         threat['attack_type_ar'] = 'موقع مخترق'
         threat['severity'] = 'HIGH'
@@ -351,7 +392,8 @@ def classify_threat(url, analysis_result):
         scam_indicators.append("No HTTPS on high-risk TLD")
     
     # Classify as SCAM if 2+ indicators OR 1 strong indicator
-    if len(scam_indicators) >= 2:
+    # Only classify as SCAM if score is significant (avoid false positives)
+    if len(scam_indicators) >= 2 and url_score >= 30:
         threat['attack_type'] = 'SCAM'
         threat['attack_type_ar'] = 'احتيال / سبام'
         threat['severity'] = 'HIGH'
