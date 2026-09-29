@@ -14,6 +14,29 @@ def classify_threat(url, analysis_result):
     url_lower = url.lower()
 
     # ============================================================
+    # HOMOGRAPH ATTACK (HIGHEST PRIORITY)
+    # ============================================================
+    try:
+        from src.homograph_detector import detect_homograph
+        is_homograph, homograph_reasons, decoded_name = detect_homograph(url)
+        
+        if is_homograph:
+            threat['attack_type'] = 'HOMOGRAPH_ATTACK'
+            threat['attack_type_ar'] = 'هجوم Homograph'
+            threat['severity'] = 'CRITICAL'
+            threat['severity_ar'] = 'حرج'
+            threat['icon'] = '🎭'
+            threat['color'] = 'red'
+            threat['indicators'] = homograph_reasons
+            threat['explanation'] = f'URL uses fake Unicode characters to mimic legitimate domain'
+            threat['explanation_ar'] = f'الرابط يستخدم أحرف Unicode مزيفة لانتحال دومين شرعي'
+            if decoded_name:
+                threat['indicators'].append(f'Real lookalike: {decoded_name}')
+            return threat
+    except Exception:
+        pass
+    
+    # ============================================================
     # WHITELIST: Trusted services (highest priority)
     # ============================================================
     TRUSTED_SERVICES = {

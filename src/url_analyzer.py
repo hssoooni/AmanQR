@@ -1,4 +1,5 @@
 import numpy as np
+from src.homograph_detector import detect_homograph
 
 # Global for abuse score
 LAST_ABUSE_SCORE = 0
@@ -432,7 +433,16 @@ def analyze_url(url):
             break
     
 
-        # ---- WHITELIST: Trusted services (highest priority) ----
+        # ---- HOMOGRAPH ATTACK CHECK (HIGHEST PRIORITY) ----
+    is_homograph, homograph_reasons, decoded_name = detect_homograph(url)
+    if is_homograph:
+        score += 95  # Critical threat
+        reasons.extend(homograph_reasons)
+        if decoded_name and decoded_name != domain:
+            reasons.append(f"→ Real lookalike: {decoded_name}")
+        return score, reasons, 0  # Immediate MALICIOUS
+    
+    # ---- WHITELIST: Trusted services (highest priority) ----
     for service in TRUSTED_SERVICES:
         if service in domain or domain.endswith(service):
             reasons.append(f"✅ Trusted service: {service}")
