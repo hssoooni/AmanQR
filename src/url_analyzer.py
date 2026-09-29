@@ -350,6 +350,33 @@ IOT_ARCHITECTURES = [
 ]
 
 
+
+
+# ============================================================
+# Trusted services (whitelist — skip all suspicious checks)
+# ============================================================
+TRUSTED_SERVICES = {
+    # Google services
+    'docs.google.com', 'drive.google.com', 'sheets.google.com',
+    'slides.google.com', 'forms.gle', 'calendar.google.com',
+    'sites.google.com', 'meet.google.com', 'photos.google.com',
+    'mail.google.com', 'accounts.google.com',
+    # Microsoft services
+    'forms.office.com', 'onedrive.live.com', 'sharepoint.com',
+    'outlook.office.com', 'docs.microsoft.com', 'teams.microsoft.com',
+    # Productivity
+    'notion.so', 'airtable.com', 'typeform.com', 'surveymonkey.com',
+    'trello.com', 'asana.com', 'monday.com', 'clickup.com',
+    # Cloud storage
+    'dropbox.com', 'box.com', 'mega.nz',
+    # Learning platforms
+    'coursera.org', 'udemy.com', 'edx.org', 'khanacademy.org',
+    'udacity.com', 'pluralsight.com', 'skillshare.com',
+    # Government (Saudi)
+    'gov.sa', 'my.gov.sa', 'moe.gov.sa', 'moh.gov.sa',
+    'hrsd.gov.sa', 'tawakkalna.gov.sa', 'absher.gov.sa',
+}
+
 def analyze_url(url):
     if not url:
         return 0, ["No URL"]
@@ -405,7 +432,14 @@ def analyze_url(url):
             break
     
 
-    # ---- 0. KNOWN MALICIOUS DOMAINS ----
+        # ---- WHITELIST: Trusted services (highest priority) ----
+    for service in TRUSTED_SERVICES:
+        if service in domain or domain.endswith(service):
+            reasons.append(f"✅ Trusted service: {service}")
+            return 0, reasons, 0  # SAFE, no abuse
+    
+
+# ---- 0. KNOWN MALICIOUS DOMAINS ----
     for mal_domain in KNOWN_MALICIOUS_DOMAINS:
         if mal_domain in domain:
             score += 80

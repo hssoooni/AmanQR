@@ -171,7 +171,11 @@ def decide(url):
     # ============================================================
     # Layer 2: URL rules
     # ============================================================
-    url_score, url_reasons = analyze_url(actual_url)
+    result_url = analyze_url(actual_url)
+    if len(result_url) == 3:
+        url_score, url_reasons, _ = result_url
+    else:
+        url_score, url_reasons = result_url
     
     if unshort_result['is_shortened']:
         if unshort_result['success']:

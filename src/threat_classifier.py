@@ -12,6 +12,46 @@ def classify_threat(url, analysis_result):
         return None
     
     url_lower = url.lower()
+
+    # ============================================================
+    # WHITELIST: Trusted services (highest priority)
+    # ============================================================
+    TRUSTED_SERVICES = {
+        'docs.google.com', 'drive.google.com', 'sheets.google.com',
+        'slides.google.com', 'forms.gle', 'calendar.google.com',
+        'sites.google.com', 'meet.google.com', 'photos.google.com',
+        'mail.google.com', 'accounts.google.com',
+        'forms.office.com', 'onedrive.live.com', 'sharepoint.com',
+        'outlook.office.com', 'docs.microsoft.com', 'teams.microsoft.com',
+        'notion.so', 'airtable.com', 'typeform.com', 'surveymonkey.com',
+        'trello.com', 'asana.com', 'monday.com', 'clickup.com',
+        'dropbox.com', 'box.com', 'mega.nz',
+        'coursera.org', 'udemy.com', 'edx.org', 'khanacademy.org',
+        'udacity.com', 'pluralsight.com', 'skillshare.com',
+        'gov.sa', 'my.gov.sa', 'moe.gov.sa', 'moh.gov.sa',
+        'hrsd.gov.sa', 'tawakkalna.gov.sa', 'absher.gov.sa',
+    }
+    
+    try:
+        from urllib.parse import urlparse as _urlparse
+        _parsed = _urlparse(url_lower if '://' in url_lower else 'http://' + url_lower)
+        _domain = _parsed.netloc.lower()
+        
+        for service in TRUSTED_SERVICES:
+            if service in _domain or _domain.endswith(service):
+                threat['attack_type'] = 'NO_THREAT'
+                threat['attack_type_ar'] = 'لا يوجد تهديد'
+                threat['severity'] = 'SAFE'
+                threat['severity_ar'] = 'آمن'
+                threat['icon'] = '✅'
+                threat['color'] = 'green'
+                threat['indicators'] = [f'Trusted service: {service}']
+                threat['explanation'] = 'URL is from a trusted service'
+                threat['explanation_ar'] = 'الرابط من خدمة موثوقة'
+                return threat
+    except Exception:
+        pass
+
     
     # ============================================================
     # KNOWN MALICIOUS DOMAINS (highest priority)
