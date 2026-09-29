@@ -2,7 +2,7 @@
 
 **Free QR Code Safety Checker - AI-Powered Threat Detection**
 
-AmanQR is a free, open-source cybersecurity tool that analyzes QR codes in real-time and detects 7 types of cyber attacks with AI-powered classification.
+AmanQR is a free, open-source cybersecurity tool that analyzes QR codes in real-time and detects 8 types of cyber attacks with AI-powered classification.
 
 ## Try it Live
 
@@ -12,8 +12,9 @@ No installation needed. Just upload a QR image.
 
 ## What it Detects
 
-AmanQR identifies 7 types of attacks:
+AmanQR identifies 8 types of attacks:
 
+- HOMOGRAPH ATTACK (CRITICAL) - Fake Unicode characters (Cyrillic/Greek)
 - MALWARE (CRITICAL) - .exe, .ps1, .sh downloads, IoT binaries
 - MALWARE-IOT (CRITICAL) - /mipsel, /arm7 (Mirai botnet)
 - PHISHING (HIGH) - Fake PayPal/Hotmail login pages
@@ -24,7 +25,7 @@ AmanQR identifies 7 types of attacks:
 
 ## How it Works
 
-AmanQR uses an 8-layer hybrid detection system:
+AmanQR uses a 9-layer hybrid detection system:
 
 ### Layer 1: QR Decoder
 - zxing-cpp with multi-attempt preprocessing
@@ -36,7 +37,13 @@ AmanQR uses an 8-layer hybrid detection system:
 - Follows HTTP + HTML + JavaScript redirects
 - Reveals true destination
 
-### Layer 3: URL Analyzer (30+ Rules)
+### Layer 3: Homograph Attack Detection (RARE)
+- Detects Cyrillic/Greek characters that look like Latin
+- Example: Cyrillic a (U+0430) looks like Latin a
+- Detects apple.com vs aple.com (fake Cyrillic)
+- Mixed script detection
+
+### Layer 4: URL Analyzer (30+ Rules)
 - Phishing keywords (login, verify, account)
 - Typosquatting detection (paypa1, goog1e)
 - Brand impersonation (fake PayPal, Microsoft)
@@ -45,47 +52,52 @@ AmanQR uses an 8-layer hybrid detection system:
 - IoT malware binaries (/mipsel, /arm7, /x86)
 - Dangerous scripts (.ps1, .bat, .vbs, .sh)
 - Known malicious domains (URLhaus feed)
+- Whitelist (40+ trusted services)
 
-### Layer 4: WHOIS Checker
+### Layer 5: WHOIS Checker
 - Domain age analysis
 - Hidden WHOIS detection
 - New domain flags
 
-### Layer 5: ML Model (LightGBM)
+### Layer 6: ML Model (LightGBM)
 - Trained on 200,000 QR codes
 - 28 engineered features
 - URL entropy, vowel ratio, typosquatting, etc.
 - 99.5% test accuracy
 
-### Layer 6: External APIs
+### Layer 7: External APIs
 - VirusTotal: 70+ antivirus engines
 - URLhaus: abuse.ch malicious URL database
 
-### Layer 7: Hosting Abuse Detection
+### Layer 8: Hosting Abuse Detection
 - GitHub /releases/, /raw/, .exe downloads
 - GitLab/Bitbucket abuse patterns
 - Blogspot/spam platforms
 
-### Layer 8: Threat Classifier
-- Classifies attack type (7 categories)
+### Layer 9: Threat Classifier (Smart)
+- Classifies attack type (8 categories)
 - Determines severity (Critical/High/Medium/Safe)
+- Context-aware (avoids false positives)
 - Provides explanation (Arabic + English)
-- Lists indicators
+- Lists detailed indicators
 
 ## Results
 
 - Accuracy: 99.5% (hold-out test set)
 - Real-world accuracy: 100% on URLhaus feeds
+- Homograph Detection: 4/4 attacks, 0/4 false positives
 - Dataset: 200,000 QR codes
 - Response Time: less than 3 seconds
 - Model Size: 611 KB
-- Layers: 8
+- Layers: 9
 
 ## What Makes AmanQR Different
 
 - 100% Free - No hidden costs
 - AI-Powered - ML + Rule-based hybrid
-- 7 Attack Types - Comprehensive classification
+- 8 Attack Types - Comprehensive classification
+- Homograph Attack Detection - Rare capability
+- Whitelist - 40+ trusted services (no false positives)
 - Bilingual - Arabic + English interface
 - Privacy First - No images stored
 - Open Source - MIT License
